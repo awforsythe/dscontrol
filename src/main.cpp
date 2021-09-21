@@ -1,39 +1,49 @@
 #include <cstdio>
-#include <cstdlib>
 #include <cinttypes>
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "ds_process.h"
+#include "ds_landmark.h"
 
-const wchar_t* WINDOW_CLASS = L"DARK SOULS";
+struct ds_jumplist
+{
+	std::vector<size_t> offsets;
+
+	size_t resolve(size_t base, const ds_process& process) const
+	{
+		const size_t last_index = offsets.size() - 1;
+
+		size_t value = process.jump(base);
+		for (size_t i = 0; value != 0 && i <= last_index; i++)
+		{
+			const size_t next = value + offsets.at(i);
+			value = i == last_index ? next : process.jump(next);
+		}
+		return value;
+	}
+};
 
 int main()
 {
-	// Find the Dark Souls Remastered window based on its window class name
-	const HWND hwnd = FindWindowW(WINDOW_CLASS, NULL);
-	if (hwnd == NULL)
+	ds_process process;
+	if (!process.open(L"DARK SOULS", L"DarkSoulsRemastered.exe"))
 	{
-		printf("ERROR: Window not found\n");
+		printf("ERROR: Failed to initialize process (is DarkSoulsRemastered.exe running?)\n");
 		return 1;
 	}
 
-	// Get the pid and open the process with access rights that'll let us read memory
-	DWORD pid;
-	GetWindowThreadProcessId(hwnd, &pid);
-	HANDLE process = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-	if (process == NULL)
-	{
-		printf("ERROR: Failed to open process\n");
-		return 1;
-	}
+	const ds_landmark landmark_x(0x3204E0, "48 8B 05 xx xx xx xx 48 39 48 68 0F 94 C0 C3");
+	const ds_jumplist x_to_player_pos{ {0x68, 0x18, 0x28, 0x50, 0x20, 0x120} };
+	
+	const size_t offset_x = landmark_x.resolve_offset(process);
+	const size_t player_pos_offset = x_to_player_pos.resolve(offset_x, process);
 
-	// We should be able to call ReadProcessMemory etc. with this handle
-	printf("OK! Process handle: %p\n", process);
-
-	// Close our handle on the process when we're done with it
-	if (CloseHandle(process) == 0)
+	float player_pos[3];
+	while (true)
 	{
-		printf("WARNING: Failed to close process handle\n");
+		if (!process.read(player_pos_offset, reinterpret_cast<uint8_t*>(&player_pos), sizeof(player_pos)))
+		{
+			break;
+		}
+		printf("%f, %f, %f\n", player_pos[0], player_pos[1], player_pos[2]);
 	}
-	return 0;
 }
