@@ -25,10 +25,17 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	const size_t chr_data = process.jump(world_chr_base);
+	const size_t chr_data = process.jump(world_chr_base) + 0x68;
 	if (chr_data == 0)
 	{
 		printf("ERROR: Failed to resolve chr_data offset from world_chr_base\n");
+		return 1;
+	}
+
+	const size_t chr_map_data = process.jump(chr_data) + 0x48;
+	if (chr_map_data == 0)
+	{
+		printf("ERROR: Failed to resolve chr_map_data offset from chr_data\n");
 		return 1;
 	}
 
@@ -55,7 +62,7 @@ int main(int argc, char* argv[])
 		printf("             0        1        2        3        4        5        6        7        8        9       10       11       12       13       14       15       16       17       18       19       20       21       22       23\n");
 #endif
 
-		size_t read_offset = world_chr_base;
+		size_t read_offset = chr_map_data;
 		for (size_t chunk_index = 0; chunk_index < num_chunks; chunk_index++)
 		{
 			if (!process.read(read_offset, reinterpret_cast<uint8_t*>(chunk), sizeof(chunk)))
