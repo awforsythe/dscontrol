@@ -24,12 +24,18 @@
     <ClCompile Include="..\src\ds_landmark.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\ds_addresses.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\ds_process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\ds_landmark.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ds_addresses.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
