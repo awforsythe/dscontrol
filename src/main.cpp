@@ -7,6 +7,8 @@
 
 #include "ds_process.h"
 #include "ds_addresses.h"
+#include "ds_pos.h"
+#include "ds_player.h"
 
 int main(int argc, char* argv[])
 {
@@ -26,12 +28,12 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	// Initialize our interface for viewing/updating player position
+	ds_player player(process, addresses);
+
 	// Test it out by warping the player when we first run
-	float pos[3] = { 90.0f, 25.0f, 107.0f };
-	float angle = 0.0f;
-	process.write(addresses.chr_warp.pos, reinterpret_cast<uint8_t*>(pos), sizeof(pos));
-	process.poke<float>(addresses.chr_warp.angle, angle);
-	process.poke<uint32_t>(addresses.chr_warp.latch, 1);
+	const ds_pos warp_pos(90.0f, 25.0f, 107.0f, 0.0f);
+	player.set_pos(warp_pos);
 
 	// Print our player position until we break with Ctrl+C
 	system("cls");
@@ -40,12 +42,7 @@ int main(int argc, char* argv[])
 		COORD coord{ 0, 0 };
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 
-		if (!process.read(addresses.chr_pos.pos, reinterpret_cast<uint8_t*>(pos), sizeof(pos)))
-		{
-			break;
-		}
-		angle = process.peek<float>(addresses.chr_pos.angle);
-
-		printf(" X: %7.3f, Y: %7.3f, Z: %7.3f | Angle: %7.3f deg (%7.3f rad)      \n", pos[0], pos[1], pos[2], angle * 57.2957795f, angle);
+		const ds_pos pos = player.get_pos();
+		printf(" X: %7.3f, Y: %7.3f, Z: %7.3f | Angle: %7.3f deg (%7.3f rad)      \n", pos.x, pos.y, pos.z, pos.angle * 57.2957795f, pos.angle);
 	}
 }
