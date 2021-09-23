@@ -10,8 +10,13 @@
 #include "ds_pos.h"
 #include "ds_player.h"
 
+#include "ViGEm/Client.h"
+
 int main(int argc, char* argv[])
 {
+	// Verify that ViGEm links and runs
+	vigem_free(vigem_alloc());
+
 	// Open an already-running DS1R process so we can manipulate its memory
 	ds_process process;
 	if (!process.open(L"DARK SOULS", L"DarkSoulsRemastered.exe"))
