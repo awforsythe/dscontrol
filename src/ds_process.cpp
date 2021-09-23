@@ -76,17 +76,31 @@ bool ds_process::open(const wchar_t* window_class_name, const wchar_t* module_na
 	return true;
 }
 
-bool ds_process::read(size_t offset, uint8_t* buf, size_t size) const
+bool ds_process::read(const uint8_t* addr, uint8_t* buf, size_t size) const
 {
-	const uint8_t* read_addr = module_addr + offset;
 	size_t num_bytes_read = 0;
-	if (ReadProcessMemory(process_handle, read_addr, buf, size, &num_bytes_read) == 0)
+	if (addr && ReadProcessMemory(process_handle, addr, buf, size, &num_bytes_read) != 0)
 	{
-		return false;
+		assert(num_bytes_read == size);
+		return true;
 	}
-	return num_bytes_read == size;
+	return false;
 }
 
+bool ds_process::write(uint8_t* addr, const uint8_t* buf, size_t size) const
+{
+	assert(addr);
+
+	size_t num_bytes_written = 0;
+	if (WriteProcessMemory(process_handle, addr, buf, size, &num_bytes_written) != 0)
+	{
+		assert(num_bytes_written == size);
+		return true;
+	}
+	return false;
+}
+
+/*
 size_t ds_process::jump(size_t offset) const
 {
 	uint32_t value = 0;
@@ -96,14 +110,4 @@ size_t ds_process::jump(size_t offset) const
 	}
 	return 0;
 }
-
-bool ds_process::write(size_t offset, const uint8_t* buf, size_t size)
-{
-	uint8_t* write_addr = module_addr + offset;
-	size_t num_bytes_written = 0;
-	if (WriteProcessMemory(process_handle, write_addr, buf, size, &num_bytes_written) == 0)
-	{
-		return false;
-	}
-	return num_bytes_written == size;
-}
+*/

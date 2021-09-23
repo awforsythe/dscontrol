@@ -9,8 +9,7 @@ static constexpr bool is_hex_char(const char c)
 	return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F');
 }
 
-ds_landmark::ds_landmark(size_t in_offset, const std::string& s)
-	: offset(in_offset)
+ds_landmark::ds_landmark(const std::string& s)
 {
 	const size_t n = s.size();
 	const size_t num_bytes = (n + 1) / 3;
@@ -22,11 +21,11 @@ ds_landmark::ds_landmark(size_t in_offset, const std::string& s)
 		flags.reserve(num_bytes);
 
 		char buf[3] = { 0, 0, 0 };
-		for (size_t offset = 0; offset < n; offset += 3)
+		for (size_t i = 0; i < n; i += 3)
 		{
-			buf[0] = s[offset];
-			buf[1] = s[offset + 1];
-			const char delim = s[offset + 2];
+			buf[0] = s[i];
+			buf[1] = s[i + 1];
+			const char delim = s[i + 2];
 			assert(delim == 0 || delim == ' ');
 
 			if (buf[0] == 'x' && buf[1] == 'x')
@@ -46,12 +45,11 @@ ds_landmark::ds_landmark(size_t in_offset, const std::string& s)
 	assert(flags.size() == num_bytes);
 }
 
-size_t ds_landmark::resolve_offset(const ds_process& process) const
+bool ds_landmark::match(const std::vector<uint8_t>& buf) const
 {
-	std::vector<uint8_t> buf(bytes.size());
-	if (!process.read(offset, buf.data(), buf.size()))
+	if (buf.size() != size())
 	{
-		return 0;
+		return false;
 	}
 
 	for (size_t i = 0; i < buf.size(); i++)
@@ -59,9 +57,8 @@ size_t ds_landmark::resolve_offset(const ds_process& process) const
 		const bool is_wildcard = (flags[i] & FLAG_ANY_VALUE) != 0;
 		if (!is_wildcard && buf[i] != bytes[i])
 		{
-			return 0;
+			return false;
 		}
 	}
-
-	return offset + *reinterpret_cast<uint32_t*>(&buf[3]) + 7;
+	return true;
 }

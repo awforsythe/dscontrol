@@ -9,10 +9,11 @@ struct ds_landmark
 	static const uint8_t FLAGS_NONE = 0;
 	static const uint8_t FLAG_ANY_VALUE = 1;
 
-	size_t offset;
 	std::vector<uint8_t> bytes;
 	std::vector<uint8_t> flags;
 
-	ds_landmark(size_t in_offset, const std::string& s);
-	size_t resolve_offset(const struct ds_process& process) const;
+	ds_landmark(const std::string& s);
+	bool match(const std::vector<uint8_t>& bytes) const;
+
+	inline size_t size() const { return bytes.size(); }
 };
