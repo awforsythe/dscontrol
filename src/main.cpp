@@ -5,17 +5,24 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include "vc_state.h"
+#include "vc_device.h"
+
 #include "ds_process.h"
 #include "ds_addresses.h"
 #include "ds_pos.h"
 #include "ds_player.h"
 
-#include "ViGEm/Client.h"
-
 int main(int argc, char* argv[])
 {
-	// Verify that ViGEm links and runs
-	vigem_free(vigem_alloc());
+	// Connect an emulated X360 controller to the ViGEmBus driver
+	vc_state state;
+	vc_device device;
+	if (!device.init())
+	{
+		printf("ERROR: Failed to initialize virtual controller device\n");
+		return 1;
+	}
 
 	// Open an already-running DS1R process so we can manipulate its memory
 	ds_process process;
@@ -40,10 +47,16 @@ int main(int argc, char* argv[])
 	const ds_pos warp_pos(90.0f, 25.0f, 107.0f, 0.0f);
 	player.set_pos(warp_pos);
 
+	state.set_left_stick(0.0f, 1.0f);
+	device.update(state);
+
 	// Print our player position until we break with Ctrl+C
 	system("cls");
 	while (true)
 	{
+		state.set_left_stick(0.0f, 1.0f);
+		device.update(state);
+
 		COORD coord{ 0, 0 };
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 
