@@ -47,8 +47,14 @@ int main(int argc, char* argv[])
 	const ds_pos warp_pos(90.0f, 25.0f, 107.0f, 0.0f);
 	player.set_pos(warp_pos);
 
-	state.set_left_stick(0.0f, 1.0f);
-	device.update(state);
+	RECT rect;
+	GetWindowRect((HWND)process.window_handle, &rect);
+	printf("x: %d\n", rect.left);
+	printf("y: %d\n", rect.top);
+	printf("w: %d\n", rect.right - rect.left);
+	printf("h: %d\n", rect.bottom - rect.top);
+	MoveWindow((HWND)process.window_handle, 1912, -24, 1936, 1119, TRUE);
+	SetForegroundWindow((HWND)process.window_handle);
 
 	// Print our player position until we break with Ctrl+C
 	system("cls");
