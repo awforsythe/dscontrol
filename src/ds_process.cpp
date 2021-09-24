@@ -99,15 +99,3 @@ bool ds_process::write(uint8_t* addr, const uint8_t* buf, size_t size) const
 	}
 	return false;
 }
-
-/*
-size_t ds_process::jump(size_t offset) const
-{
-	uint32_t value = 0;
-	if (read(offset, reinterpret_cast<uint8_t*>(&value), sizeof(value)))
-	{
-		return static_cast<size_t>(value) - reinterpret_cast<size_t>(module_addr);
-	}
-	return 0;
-}
-*/
