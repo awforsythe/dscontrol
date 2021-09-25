@@ -81,6 +81,7 @@ int main(int argc, char* argv[])
 	// Print our player position and other data until we break with Ctrl+C
 	system("cls");
 	uint32_t prev_playtime = 0;
+	uint32_t num_reads_in_current_tick = 0;
 	while (true)
 	{
 		state.set_left_stick(0.0f, 1.0f);
@@ -100,6 +101,13 @@ int main(int argc, char* argv[])
 				printf(" X: %7.3f, Y: %7.3f, Z: %7.3f | Angle: %7.3f deg (%7.3f rad)      \n", pos.x, pos.y, pos.z, pos.angle * 57.2957795f, pos.angle);
 				printf("time: %u     \n", playtime);
 				printf("delta: %u    \n", delta);
+				printf("reads per tick: %u    \n", num_reads_in_current_tick);
+
+				num_reads_in_current_tick = 0;
+			}
+			else
+			{
+				num_reads_in_current_tick++;
 			}
 		}
 		prev_playtime = playtime;
