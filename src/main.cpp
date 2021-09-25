@@ -1,9 +1,12 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cinttypes>
+#include <cassert>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+#include "yaml-cpp/yaml.h"
 
 #include "vc_state.h"
 #include "vc_device.h"
@@ -17,6 +20,18 @@
 
 int main(int argc, char* argv[])
 {
+	// Verify that yaml-cpp works
+	const YAML::Node root = YAML::Load("numbers: [1, 2, 3]");
+	assert(root.Type() == YAML::NodeType::Map);
+	const YAML::Node numbers = root["numbers"];
+	assert(numbers);
+	for (YAML::const_iterator iter = numbers.begin(); iter != numbers.end(); ++iter)
+	{
+		assert(iter->Type() == YAML::NodeType::Scalar);
+		printf("%d\n", iter->as<int32_t>());
+	}
+	system("pause");
+
 	// Connect an emulated X360 controller to the ViGEmBus driver
 	vc_state state;
 	vc_device device;
