@@ -1,7 +1,5 @@
 #include "vc_state.h"
 
-#include <cstdio>
-
 static int32_t map_analog_thumbstick(float unit_value)
 {
 	if (unit_value == 0.0f)
@@ -28,5 +26,4 @@ void vc_state::set_left_stick(float x, float y)
 {
 	report.sThumbLX = map_analog_thumbstick(x);
 	report.sThumbLY = map_analog_thumbstick(y);
-	printf("%d, %d\n", report.sThumbLX, report.sThumbLY);
 }
