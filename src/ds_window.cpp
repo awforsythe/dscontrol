@@ -21,6 +21,7 @@ bool ds_window::find(const wchar_t* window_class_name)
 		printf("ERROR: Window not found\n");
 		return false;
 	}
+	return true;
 }
 
 void ds_window::move_to(int32_t x, int32_t y)
