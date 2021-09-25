@@ -32,35 +32,27 @@ static void* get_base_address(const wchar_t* module_name, DWORD pid)
 
 ds_process::ds_process()
 	: pid(0)
-	, window_handle(nullptr)
-	, process_handle(nullptr)
+	, handle(nullptr)
 	, module_addr(nullptr)
 {
 }
 
 ds_process::~ds_process()
 {
-	if (process_handle)
+	if (handle)
 	{
-		CloseHandle(process_handle);
+		CloseHandle(handle);
 	}
 }
 
-bool ds_process::open(const wchar_t* window_class_name, const wchar_t* module_name)
+bool ds_process::open(void* window_handle, const wchar_t* module_name)
 {
-	assert(window_class_name);
+	assert(window_handle);
 	assert(module_name);
 
-	window_handle = FindWindowW(window_class_name, nullptr);
-	if (!window_handle)
-	{
-		printf("ERROR: Window not found\n");
-		return false;
-	}
-
 	GetWindowThreadProcessId((HWND)window_handle, (LPDWORD)&pid);
-	process_handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-	if (!process_handle)
+	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+	if (!handle)
 	{
 		printf("ERROR: Failed to open process\n");
 		return false;
@@ -79,7 +71,7 @@ bool ds_process::open(const wchar_t* window_class_name, const wchar_t* module_na
 bool ds_process::read(const uint8_t* addr, uint8_t* buf, size_t size) const
 {
 	size_t num_bytes_read = 0;
-	if (addr && ReadProcessMemory(process_handle, addr, buf, size, &num_bytes_read) != 0)
+	if (addr && ReadProcessMemory(handle, addr, buf, size, &num_bytes_read) != 0)
 	{
 		assert(num_bytes_read == size);
 		return true;
@@ -92,7 +84,7 @@ bool ds_process::write(uint8_t* addr, const uint8_t* buf, size_t size) const
 	assert(addr);
 
 	size_t num_bytes_written = 0;
-	if (WriteProcessMemory(process_handle, addr, buf, size, &num_bytes_written) != 0)
+	if (WriteProcessMemory(handle, addr, buf, size, &num_bytes_written) != 0)
 	{
 		assert(num_bytes_written == size);
 		return true;

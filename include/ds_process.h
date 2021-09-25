@@ -5,14 +5,13 @@
 struct ds_process
 {
 	uint32_t pid;
-	void* window_handle;
-	void* process_handle;
+	void* handle;
 	uint8_t* module_addr;
 
 	ds_process();
 	~ds_process();
 
-	bool open(const wchar_t* window_class_name, const wchar_t* module_name);
+	bool open(void* window_handle, const wchar_t* module_name);
 	bool read(const uint8_t* addr, uint8_t* buf, size_t size) const;
 	bool write(uint8_t* addr, const uint8_t* buf, size_t size) const;
 	

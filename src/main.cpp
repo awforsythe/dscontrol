@@ -8,6 +8,7 @@
 #include "vc_state.h"
 #include "vc_device.h"
 
+#include "ds_window.h"
 #include "ds_process.h"
 #include "ds_addresses.h"
 #include "ds_pos.h"
@@ -24,9 +25,17 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	// Open an already-running DS1R process so we can manipulate its memory
+	// Find the DS1R window: it should already be running
+	ds_window window;
+	if (!window.find(L"DARK SOULS"))
+	{
+		printf("ERROR: Failed to find window (is DarkSoulsRemastered.exe running?)\n");
+		return false;
+	}
+
+	// Open a process handle so we can read and write memory
 	ds_process process;
-	if (!process.open(L"DARK SOULS", L"DarkSoulsRemastered.exe"))
+	if (!process.open(window.handle, L"DarkSoulsRemastered.exe"))
 	{
 		printf("ERROR: Failed to initialize process (is DarkSoulsRemastered.exe running?)\n");
 		return 1;
@@ -40,43 +49,16 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	// Move the window and give focus to the game
+	window.move_to(1920, 0);
+	window.activate();
+
 	// Initialize our interface for viewing/updating player position
 	ds_player player(process, addresses);
 
 	// Test it out by warping the player when we first run
 	const ds_pos warp_pos(90.0f, 25.0f, 107.0f, 0.0f);
 	player.set_pos(warp_pos);
-
-	RECT rect;
-	GetWindowRect((HWND)process.window_handle, &rect);
-	printf("x: %d\n", rect.left);
-	printf("y: %d\n", rect.top);
-	printf("w: %d\n", rect.right - rect.left);
-	printf("h: %d\n", rect.bottom - rect.top);
-	MoveWindow((HWND)process.window_handle, 1912, -24, 1936, 1119, TRUE);
-	system("pause");
-	SetForegroundWindow((HWND)process.window_handle);
-
-	SendMessage((HWND)process.window_handle, WM_NCACTIVATE, FALSE, 0);
-	SendMessage((HWND)process.window_handle, WM_ACTIVATE, FALSE, 0);
-	SendMessage((HWND)process.window_handle, WM_ACTIVATEAPP, FALSE, 0);
-	SendMessage((HWND)process.window_handle, WM_KILLFOCUS, FALSE, 0);
-	SendMessage((HWND)process.window_handle, WM_IME_SETCONTEXT, FALSE, ISC_SHOWUIALL);
-	SendMessage((HWND)process.window_handle, WM_IME_NOTIFY, IMN_CLOSESTATUSWINDOW, 0);
-
-	WINDOWPOS window_pos;
-	ZeroMemory(&window_pos, sizeof(window_pos));
-	window_pos.flags = SWP_NOSIZE | SWP_NOMOVE;
-	SendMessage((HWND)process.window_handle, WM_WINDOWPOSCHANGING, 0, (LPARAM)&window_pos);
-
-	Sleep(100);
-
-	SendMessage((HWND)process.window_handle, WM_ACTIVATEAPP, TRUE, 0x548); // Thread ID of window being deactivated
-	SendMessage((HWND)process.window_handle, WM_NCACTIVATE, TRUE, 0);
-	SendMessage((HWND)process.window_handle, WM_ACTIVATE, TRUE, 0);
-	SendMessage((HWND)process.window_handle, WM_IME_SETCONTEXT, TRUE, ISC_SHOWUIALL);
-	SendMessage((HWND)process.window_handle, WM_IME_NOTIFY, IMN_OPENSTATUSWINDOW, 0);
-	SendMessage((HWND)process.window_handle, WM_SETFOCUS, 0, 0);
 
 	// Print our player position and other data until we break with Ctrl+C
 	system("cls");
