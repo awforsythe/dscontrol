@@ -78,18 +78,30 @@ int main(int argc, char* argv[])
 	SendMessage((HWND)process.window_handle, WM_IME_NOTIFY, IMN_OPENSTATUSWINDOW, 0);
 	SendMessage((HWND)process.window_handle, WM_SETFOCUS, 0, 0);
 
-	// Print our player position until we break with Ctrl+C
+	// Print our player position and other data until we break with Ctrl+C
 	system("cls");
+	uint32_t prev_playtime = 0;
 	while (true)
 	{
 		state.set_left_stick(0.0f, 1.0f);
 		device.update(state);
 
-		COORD coord{ 0, 0 };
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-
+		const uint32_t playtime = process.peek<uint32_t>(addresses.playtime);
 		const ds_pos pos = player.get_pos();
-		printf(" X: %7.3f, Y: %7.3f, Z: %7.3f | Angle: %7.3f deg (%7.3f rad)      \n", pos.x, pos.y, pos.z, pos.angle * 57.2957795f, pos.angle);
-		printf("time: %u     \n", process.peek<uint32_t>(addresses.playtime));
+
+		if (prev_playtime != 0)
+		{
+			const uint32_t delta = playtime - prev_playtime;
+			if (delta > 0)
+			{
+				COORD coord{ 0, 0 };
+				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+
+				printf(" X: %7.3f, Y: %7.3f, Z: %7.3f | Angle: %7.3f deg (%7.3f rad)      \n", pos.x, pos.y, pos.z, pos.angle * 57.2957795f, pos.angle);
+				printf("time: %u     \n", playtime);
+				printf("delta: %u    \n", delta);
+			}
+		}
+		prev_playtime = playtime;
 	}
 }
