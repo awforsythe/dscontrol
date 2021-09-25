@@ -54,7 +54,29 @@ int main(int argc, char* argv[])
 	printf("w: %d\n", rect.right - rect.left);
 	printf("h: %d\n", rect.bottom - rect.top);
 	MoveWindow((HWND)process.window_handle, 1912, -24, 1936, 1119, TRUE);
+	system("pause");
 	SetForegroundWindow((HWND)process.window_handle);
+
+	SendMessage((HWND)process.window_handle, WM_NCACTIVATE, FALSE, 0);
+	SendMessage((HWND)process.window_handle, WM_ACTIVATE, FALSE, 0);
+	SendMessage((HWND)process.window_handle, WM_ACTIVATEAPP, FALSE, 0);
+	SendMessage((HWND)process.window_handle, WM_KILLFOCUS, FALSE, 0);
+	SendMessage((HWND)process.window_handle, WM_IME_SETCONTEXT, FALSE, ISC_SHOWUIALL);
+	SendMessage((HWND)process.window_handle, WM_IME_NOTIFY, IMN_CLOSESTATUSWINDOW, 0);
+
+	WINDOWPOS window_pos;
+	ZeroMemory(&window_pos, sizeof(window_pos));
+	window_pos.flags = SWP_NOSIZE | SWP_NOMOVE;
+	SendMessage((HWND)process.window_handle, WM_WINDOWPOSCHANGING, 0, (LPARAM)&window_pos);
+
+	Sleep(100);
+
+	SendMessage((HWND)process.window_handle, WM_ACTIVATEAPP, TRUE, 0x548); // Thread ID of window being deactivated
+	SendMessage((HWND)process.window_handle, WM_NCACTIVATE, TRUE, 0);
+	SendMessage((HWND)process.window_handle, WM_ACTIVATE, TRUE, 0);
+	SendMessage((HWND)process.window_handle, WM_IME_SETCONTEXT, TRUE, ISC_SHOWUIALL);
+	SendMessage((HWND)process.window_handle, WM_IME_NOTIFY, IMN_OPENSTATUSWINDOW, 0);
+	SendMessage((HWND)process.window_handle, WM_SETFOCUS, 0, 0);
 
 	// Print our player position until we break with Ctrl+C
 	system("cls");
