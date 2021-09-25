@@ -12,6 +12,7 @@
 #include "ds_process.h"
 #include "ds_addresses.h"
 #include "ds_pos.h"
+#include "ds_clock.h"
 #include "ds_player.h"
 
 int main(int argc, char* argv[])
@@ -50,82 +51,56 @@ int main(int argc, char* argv[])
 	}
 
 	// Move the window and give focus to the game
+	system("cls");
 	window.move_to(1920, 0);
 	window.activate();
 
-	// Initialize our interface for viewing/updating player position
+	// Initialize our interfaces for reading/manipulating the game
+	ds_clock clock(process, addresses);
 	ds_player player(process, addresses);
 
-	// Test it out by warping the player when we first run
-	const ds_pos warp_pos(90.0f, 25.0f, 107.0f, 0.0f);
-	player.set_pos(warp_pos);
-
-	// Print our player position and other data until we break with Ctrl+C
-	system("cls");
-	float prev_pos_x = 0.0f;
-	bool pos_x_has_changed = false;
-	uint32_t prev_playtime = 0;
-	uint32_t num_reads_in_prev_tick = 0;
-	uint32_t num_reads_in_current_tick = 0;
-	uint32_t num_reads_for_pos_x_change = 0;
-	uint32_t num_nonzero_non16_deltas = 0;
-	uint32_t num_nonzero_small_pos_x_change_delays = 0;
-	uint32_t last_small_num_reads_for_pos_x_change = 0;
-	float last_small_read_as_ratio = 0.0f;
 	while (true)
 	{
-		state.set_left_stick(0.0f, 1.0f);
-		device.update(state);
-
-		const uint32_t playtime = process.peek<uint32_t>(addresses.playtime);
-		const ds_pos pos = player.get_pos();
-
-		if (prev_playtime != 0)
+		const uint32_t delta = clock.read();
+		if (delta > 0)
 		{
-			const uint32_t delta = playtime - prev_playtime;
-			if (delta > 0)
+			const ds_pos pos = player.get_pos();
+
+			SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
+			printf("FRAME: %u             \n", clock.frame_count);
+			printf("POS X: %7.3f          \n", pos.x);
+			printf("POS Y: %7.3f          \n", pos.y);
+			printf("POS Z: %7.3f          \n", pos.z);
+			printf("ANGLE: %7.3f          \n", pos.angle);
+			printf("(deg): %7.3f          \n", pos.angle * 57.2957795f);
+
+			if (clock.frame_count == 200)
 			{
-				if (delta != 16)
-				{
-					num_nonzero_non16_deltas++;
-				}
-
-				COORD coord{ 0, 0 };
-				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-
-				printf(" X: %7.3f, Y: %7.3f, Z: %7.3f | Angle: %7.3f deg (%7.3f rad)      \n", pos.x, pos.y, pos.z, pos.angle * 57.2957795f, pos.angle);
-				printf("time: %u     \n", playtime);
-				printf("delta: %u    \n", delta);
-				printf("reads per tick: %u    \n", num_reads_in_current_tick);
-				printf("pos_x changed in: %u  \n", num_reads_for_pos_x_change);
-				printf("num small: %u         \n", num_nonzero_small_pos_x_change_delays);
-				printf("last small: %u        \n", last_small_num_reads_for_pos_x_change);
-				printf("as ratio: %0.5f       \n", last_small_read_as_ratio);
-				printf("num deltas != 16: %u  \n", num_nonzero_non16_deltas);
-
-				num_reads_in_prev_tick = num_reads_in_current_tick;
-				num_reads_in_current_tick = 0;
-				num_reads_for_pos_x_change = 0;
+				const ds_pos warp_pos(82.6f, 22.5f, 107.4f, 1.56f);
+				player.set_pos(warp_pos);
 			}
-			else
+
+			if (clock.frame_count > 400)
 			{
-				num_reads_in_current_tick++;
-				if (num_reads_for_pos_x_change == 0 && pos.x != prev_pos_x)
+				if (clock.frame_count < 1000)
 				{
-					num_reads_for_pos_x_change = num_reads_in_current_tick;
-					if (num_reads_for_pos_x_change < 2000)
+					const float forward_input = min(1.0f, static_cast<float>(clock.frame_count - 400) / 200.0f);
+					state.set_left_stick(0.0f, forward_input);
+					device.update(state);
+					printf("input: forward %5.3f  \n", forward_input);
+				}
+				else
+				{
+					state.reset();
+					device.update(state);
+					printf("input: OFF                \n");
+
+					if (clock.frame_count > 1200)
 					{
-						last_small_num_reads_for_pos_x_change = num_reads_for_pos_x_change;
-						if (num_reads_in_prev_tick > 0.0f)
-						{
-							last_small_read_as_ratio = static_cast<float>(last_small_num_reads_for_pos_x_change) / static_cast<float>(num_reads_in_prev_tick);
-						}
-						num_nonzero_small_pos_x_change_delays++;
+						clock.reset();
 					}
 				}
 			}
 		}
-		prev_playtime = playtime;
-		prev_pos_x = pos.x;
 	}
 }

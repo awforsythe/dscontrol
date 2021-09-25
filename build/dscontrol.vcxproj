@@ -90,6 +90,7 @@
   <ItemGroup>
     <ClCompile Include="../src/main.cpp" />
     <ClCompile Include="..\src\ds_addresses.cpp" />
+    <ClCompile Include="..\src\ds_clock.cpp" />
     <ClCompile Include="..\src\ds_landmark.cpp" />
     <ClCompile Include="..\src\ds_player.cpp" />
     <ClCompile Include="..\src\ds_process.cpp" />
@@ -99,6 +100,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\ds_addresses.h" />
+    <ClInclude Include="..\include\ds_clock.h" />
     <ClInclude Include="..\include\ds_landmark.h" />
     <ClInclude Include="..\include\ds_player.h" />
     <ClInclude Include="..\include\ds_pos.h" />
