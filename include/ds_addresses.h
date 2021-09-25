@@ -4,6 +4,8 @@
 
 struct ds_addresses
 {
+	uint8_t* playtime;
+
 	struct
 	{
 		uint8_t* pos;

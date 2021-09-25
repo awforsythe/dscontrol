@@ -90,5 +90,6 @@ int main(int argc, char* argv[])
 
 		const ds_pos pos = player.get_pos();
 		printf(" X: %7.3f, Y: %7.3f, Z: %7.3f | Angle: %7.3f deg (%7.3f rad)      \n", pos.x, pos.y, pos.z, pos.angle * 57.2957795f, pos.angle);
+		printf("time: %u     \n", process.peek<uint32_t>(addresses.playtime));
 	}
 }
