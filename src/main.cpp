@@ -80,9 +80,16 @@ int main(int argc, char* argv[])
 
 	// Print our player position and other data until we break with Ctrl+C
 	system("cls");
+	float prev_pos_x = 0.0f;
+	bool pos_x_has_changed = false;
 	uint32_t prev_playtime = 0;
+	uint32_t num_reads_in_prev_tick = 0;
 	uint32_t num_reads_in_current_tick = 0;
+	uint32_t num_reads_for_pos_x_change = 0;
 	uint32_t num_nonzero_non16_deltas = 0;
+	uint32_t num_nonzero_small_pos_x_change_delays = 0;
+	uint32_t last_small_num_reads_for_pos_x_change = 0;
+	float last_small_read_as_ratio = 0.0f;
 	while (true)
 	{
 		state.set_left_stick(0.0f, 1.0f);
@@ -108,15 +115,35 @@ int main(int argc, char* argv[])
 				printf("time: %u     \n", playtime);
 				printf("delta: %u    \n", delta);
 				printf("reads per tick: %u    \n", num_reads_in_current_tick);
+				printf("pos_x changed in: %u  \n", num_reads_for_pos_x_change);
+				printf("num small: %u         \n", num_nonzero_small_pos_x_change_delays);
+				printf("last small: %u        \n", last_small_num_reads_for_pos_x_change);
+				printf("as ratio: %0.5f       \n", last_small_read_as_ratio);
 				printf("num deltas != 16: %u  \n", num_nonzero_non16_deltas);
 
+				num_reads_in_prev_tick = num_reads_in_current_tick;
 				num_reads_in_current_tick = 0;
+				num_reads_for_pos_x_change = 0;
 			}
 			else
 			{
 				num_reads_in_current_tick++;
+				if (num_reads_for_pos_x_change == 0 && pos.x != prev_pos_x)
+				{
+					num_reads_for_pos_x_change = num_reads_in_current_tick;
+					if (num_reads_for_pos_x_change < 2000)
+					{
+						last_small_num_reads_for_pos_x_change = num_reads_for_pos_x_change;
+						if (num_reads_in_prev_tick > 0.0f)
+						{
+							last_small_read_as_ratio = static_cast<float>(last_small_num_reads_for_pos_x_change) / static_cast<float>(num_reads_in_prev_tick);
+						}
+						num_nonzero_small_pos_x_change_delays++;
+					}
+				}
 			}
 		}
 		prev_playtime = playtime;
+		prev_pos_x = pos.x;
 	}
 }
