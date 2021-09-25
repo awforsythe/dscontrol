@@ -82,6 +82,7 @@ int main(int argc, char* argv[])
 	system("cls");
 	uint32_t prev_playtime = 0;
 	uint32_t num_reads_in_current_tick = 0;
+	uint32_t num_nonzero_non16_deltas = 0;
 	while (true)
 	{
 		state.set_left_stick(0.0f, 1.0f);
@@ -95,6 +96,11 @@ int main(int argc, char* argv[])
 			const uint32_t delta = playtime - prev_playtime;
 			if (delta > 0)
 			{
+				if (delta != 16)
+				{
+					num_nonzero_non16_deltas++;
+				}
+
 				COORD coord{ 0, 0 };
 				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 
@@ -102,6 +108,7 @@ int main(int argc, char* argv[])
 				printf("time: %u     \n", playtime);
 				printf("delta: %u    \n", delta);
 				printf("reads per tick: %u    \n", num_reads_in_current_tick);
+				printf("num deltas != 16: %u  \n", num_nonzero_non16_deltas);
 
 				num_reads_in_current_tick = 0;
 			}
