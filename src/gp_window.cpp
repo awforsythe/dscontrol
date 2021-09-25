@@ -1,4 +1,4 @@
-#include "ds_window.h"
+#include "gp_window.h"
 
 #include <cstdio>
 #include <cassert>
@@ -6,12 +6,12 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-ds_window::ds_window()
+gp_window::gp_window()
 	: handle(nullptr)
 {
 }
 
-bool ds_window::find(const wchar_t* window_class_name)
+bool gp_window::find(const wchar_t* window_class_name)
 {
 	assert(window_class_name);
 
@@ -24,7 +24,7 @@ bool ds_window::find(const wchar_t* window_class_name)
 	return true;
 }
 
-void ds_window::move_to(int32_t x, int32_t y)
+void gp_window::move_to(int32_t x, int32_t y)
 {
 	RECT rect;
 	GetWindowRect(reinterpret_cast<HWND>(handle), &rect);
@@ -37,7 +37,7 @@ void ds_window::move_to(int32_t x, int32_t y)
 	MoveWindow(reinterpret_cast<HWND>(handle), x + fudge_x, y + fudge_y, width, height, TRUE);
 }
 
-void ds_window::activate()
+void gp_window::activate()
 {
 	SetForegroundWindow(reinterpret_cast<HWND>(handle));
 }

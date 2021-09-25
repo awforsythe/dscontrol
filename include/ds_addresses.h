@@ -2,6 +2,8 @@
 
 #include <cinttypes>
 
+struct gp_process;
+
 struct ds_addresses
 {
 	uint8_t* playtime;
@@ -21,5 +23,5 @@ struct ds_addresses
 	}
 	chr_pos;
 
-	bool resolve(const struct ds_process& process);
+	bool resolve(const gp_process& process);
 };

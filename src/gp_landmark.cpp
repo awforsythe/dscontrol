@@ -1,15 +1,15 @@
-#include "ds_landmark.h"
+#include "gp_landmark.h"
 
 #include <cassert>
 
-#include "ds_process.h"
+#include "gp_process.h"
 
 static constexpr bool is_hex_char(const char c)
 {
 	return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F');
 }
 
-ds_landmark::ds_landmark(const std::string& s)
+gp_landmark::gp_landmark(const std::string& s)
 {
 	const size_t n = s.size();
 	const size_t num_bytes = (n + 1) / 3;
@@ -45,7 +45,7 @@ ds_landmark::ds_landmark(const std::string& s)
 	assert(flags.size() == num_bytes);
 }
 
-bool ds_landmark::match(const std::vector<uint8_t>& buf) const
+bool gp_landmark::match(const std::vector<uint8_t>& buf) const
 {
 	if (buf.size() != size())
 	{

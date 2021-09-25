@@ -6,7 +6,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include "ds_process.h"
+#include "gp_process.h"
 #include "ds_addresses.h"
 
 static uint64_t s_freq = 0;
@@ -30,7 +30,7 @@ static double get_elapsed(uint64_t from, uint64_t to)
 	return 0;
 }
 
-ds_clock::ds_clock(ds_process& in_process, ds_addresses& in_addresses)
+ds_clock::ds_clock(gp_process& in_process, ds_addresses& in_addresses)
 	: process(in_process)
 	, playtime_addr(in_addresses.playtime)
 	, playtime(0)

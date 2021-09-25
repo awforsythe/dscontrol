@@ -11,8 +11,8 @@
 #include "vc_state.h"
 #include "vc_device.h"
 
-#include "ds_window.h"
-#include "ds_process.h"
+#include "gp_window.h"
+#include "gp_process.h"
 #include "ds_addresses.h"
 #include "ds_pos.h"
 #include "ds_clock.h"
@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Find the DS1R window: it should already be running
-	ds_window window;
+	gp_window window;
 	if (!window.find(L"DARK SOULS"))
 	{
 		printf("ERROR: Failed to find window (is DarkSoulsRemastered.exe running?)\n");
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Open a process handle so we can read and write memory
-	ds_process process;
+	gp_process process;
 	if (!process.open(window.handle, L"DarkSoulsRemastered.exe"))
 	{
 		printf("ERROR: Failed to initialize process (is DarkSoulsRemastered.exe running?)\n");

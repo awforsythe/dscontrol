@@ -2,14 +2,14 @@
 
 #include <cinttypes>
 
-struct ds_process
+struct gp_process
 {
 	uint32_t pid;
 	void* handle;
 	uint8_t* module_addr;
 
-	ds_process();
-	~ds_process();
+	gp_process();
+	~gp_process();
 
 	bool open(void* window_handle, const wchar_t* module_name);
 	bool read(const uint8_t* addr, uint8_t* buf, size_t size) const;

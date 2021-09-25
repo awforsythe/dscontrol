@@ -2,16 +2,16 @@
 
 #include <vector>
 
-#include "ds_process.h"
-#include "ds_landmark.h"
+#include "gp_process.h"
+#include "gp_landmark.h"
 
-bool ds_addresses::resolve(const ds_process& process)
+bool ds_addresses::resolve(const gp_process& process)
 {
 	// Use a buffer to read blocks of memory from landmarks (a.k.a. "AOBs")
 	std::vector<uint8_t> buf;
 
 	const uint32_t stats_landmark_offset = 0x728E50;
-	const ds_landmark stats_landmark("48 8B 05 xx xx xx xx 45 33 ED 48 8B F1 48 85 C0");
+	const gp_landmark stats_landmark("48 8B 05 xx xx xx xx 45 33 ED 48 8B F1 48 85 C0");
 
 	buf.resize(stats_landmark.size());
 	uint8_t* stats_landmark_addr = process.to_addr(stats_landmark_offset);
@@ -42,7 +42,7 @@ bool ds_addresses::resolve(const ds_process& process)
 	// We expect to find this unique pattern of bytes at the given address: it
 	// contains a pointer that will lead us to world character data
 	const uint32_t world_chr_landmark_offset = 0x7C0206;
-	const ds_landmark world_chr_landmark("48 8B 05 xx xx xx xx 48 8B 48 68 48 85 C9 0F 84 xx xx xx xx 48 39 5E 10 0F 84 xx xx xx xx 48");
+	const gp_landmark world_chr_landmark("48 8B 05 xx xx xx xx 48 8B 48 68 48 85 C9 0F 84 xx xx xx xx 48 39 5E 10 0F 84 xx xx xx xx 48");
 
 	// Check for the landmark at that offset: verify that we can read those
 	// bytes and that they match the expected pattern

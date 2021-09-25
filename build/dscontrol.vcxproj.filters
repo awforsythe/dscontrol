@@ -18,10 +18,10 @@
     <ClCompile Include="../src/main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ds_process.cpp">
+    <ClCompile Include="..\src\gp_process.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ds_landmark.cpp">
+    <ClCompile Include="..\src\gp_landmark.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ds_addresses.cpp">
@@ -36,7 +36,7 @@
     <ClCompile Include="..\src\vc_state.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ds_window.cpp">
+    <ClCompile Include="..\src\gp_window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ds_clock.cpp">
@@ -44,10 +44,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\ds_process.h">
+    <ClInclude Include="..\include\gp_process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\ds_landmark.h">
+    <ClInclude Include="..\include\gp_landmark.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\ds_addresses.h">
@@ -65,7 +65,7 @@
     <ClInclude Include="..\include\vc_state.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\ds_window.h">
+    <ClInclude Include="..\include\gp_window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\ds_clock.h">

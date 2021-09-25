@@ -1,4 +1,4 @@
-#include "ds_process.h"
+#include "gp_process.h"
 
 #include <cassert>
 #include <cstdio>
@@ -30,14 +30,14 @@ static void* get_base_address(const wchar_t* module_name, DWORD pid)
 	return base_address;
 }
 
-ds_process::ds_process()
+gp_process::gp_process()
 	: pid(0)
 	, handle(nullptr)
 	, module_addr(nullptr)
 {
 }
 
-ds_process::~ds_process()
+gp_process::~gp_process()
 {
 	if (handle)
 	{
@@ -45,7 +45,7 @@ ds_process::~ds_process()
 	}
 }
 
-bool ds_process::open(void* window_handle, const wchar_t* module_name)
+bool gp_process::open(void* window_handle, const wchar_t* module_name)
 {
 	assert(window_handle);
 	assert(module_name);
@@ -68,7 +68,7 @@ bool ds_process::open(void* window_handle, const wchar_t* module_name)
 	return true;
 }
 
-bool ds_process::read(const uint8_t* addr, uint8_t* buf, size_t size) const
+bool gp_process::read(const uint8_t* addr, uint8_t* buf, size_t size) const
 {
 	size_t num_bytes_read = 0;
 	if (addr && ReadProcessMemory(handle, addr, buf, size, &num_bytes_read) != 0)
@@ -79,7 +79,7 @@ bool ds_process::read(const uint8_t* addr, uint8_t* buf, size_t size) const
 	return false;
 }
 
-bool ds_process::write(uint8_t* addr, const uint8_t* buf, size_t size) const
+bool gp_process::write(uint8_t* addr, const uint8_t* buf, size_t size) const
 {
 	assert(addr);
 

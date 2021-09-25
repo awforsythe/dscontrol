@@ -1,9 +1,9 @@
 #include "ds_player.h"
 
-#include "ds_process.h"
+#include "gp_process.h"
 #include "ds_addresses.h"
 
-ds_player::ds_player(ds_process& in_process, ds_addresses& in_addresses)
+ds_player::ds_player(gp_process& in_process, ds_addresses& in_addresses)
 	: process(in_process)
 	, addresses(in_addresses)
 {
