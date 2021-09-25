@@ -6,13 +6,14 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include "yaml-cpp/yaml.h"
-
 #include "vc_state.h"
 #include "vc_device.h"
 
+#include "si_script.h"
+
 #include "gp_window.h"
 #include "gp_process.h"
+
 #include "ds_addresses.h"
 #include "ds_pos.h"
 #include "ds_clock.h"
@@ -20,18 +21,6 @@
 
 int main(int argc, char* argv[])
 {
-	// Verify that yaml-cpp works
-	const YAML::Node root = YAML::Load("numbers: [1, 2, 3]");
-	assert(root.Type() == YAML::NodeType::Map);
-	const YAML::Node numbers = root["numbers"];
-	assert(numbers);
-	for (YAML::const_iterator iter = numbers.begin(); iter != numbers.end(); ++iter)
-	{
-		assert(iter->Type() == YAML::NodeType::Scalar);
-		printf("%d\n", iter->as<int32_t>());
-	}
-	system("pause");
-
 	// Connect an emulated X360 controller to the ViGEmBus driver
 	vc_state state;
 	vc_device device;
@@ -41,12 +30,20 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
+	// Load a script that defines the interaction we should perform
+	si_script script;
+	if (!script.load("..\\data\\script.yml"))
+	{
+		printf("ERROR: Failed to load test script file\n");
+		return 1;
+	}
+
 	// Find the DS1R window: it should already be running
 	gp_window window;
 	if (!window.find(L"DARK SOULS"))
 	{
 		printf("ERROR: Failed to find window (is DarkSoulsRemastered.exe running?)\n");
-		return false;
+		return 1;
 	}
 
 	// Open a process handle so we can read and write memory
