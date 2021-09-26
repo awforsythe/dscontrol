@@ -95,6 +95,8 @@
     <ClCompile Include="..\src\ds_player.cpp" />
     <ClCompile Include="..\src\gp_process.cpp" />
     <ClCompile Include="..\src\gp_window.cpp" />
+    <ClCompile Include="..\src\si_control.cpp" />
+    <ClCompile Include="..\src\si_event.cpp" />
     <ClCompile Include="..\src\si_list.cpp" />
     <ClCompile Include="..\src\si_script.cpp" />
     <ClCompile Include="..\src\vc_device.cpp" />
@@ -108,6 +110,8 @@
     <ClInclude Include="..\include\ds_pos.h" />
     <ClInclude Include="..\include\gp_process.h" />
     <ClInclude Include="..\include\gp_window.h" />
+    <ClInclude Include="..\include\si_control.h" />
+    <ClInclude Include="..\include\si_event.h" />
     <ClInclude Include="..\include\si_list.h" />
     <ClInclude Include="..\include\si_script.h" />
     <ClInclude Include="..\include\vc_device.h" />
