@@ -148,7 +148,7 @@ bool si_script::parse(std::vector<char>& buf)
 			// Defer to si_event for parsing the actual state value
 			assert(event_index < events.size());
 			si_event& event = events[event_index];
-			if (!event.parse(event_time, control, child))
+			if (!event.parse(event_time, duration, control, child))
 			{
 				printf("ERROR: YAML 'events' entry at index %zu: failed to parse desired state for control '%.*s'\n", event_node_index, static_cast<int>(key_name_len), key_name_str);
 				return false;

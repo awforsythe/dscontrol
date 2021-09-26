@@ -4,8 +4,7 @@ settle_time: 1.0
 duration: 9.0
 events:
 - { at: 1.0, left_stick: { to: north, over: 1.0 } }
-- { at: 2.5, button_b: down }
-- { at: 3.0, button_b: up }
+- { at: 2.5, button_b: { hold: 0.5 } }
 - { at: 3.1, button_b: press }
 - { at: 3.5, left_stick: neutral }
 - { at: 4.0, button_b: press }

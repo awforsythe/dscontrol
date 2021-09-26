@@ -34,21 +34,5 @@ static const char* si_control_names[] =
 	"button_rs"
 };
 
-union si_control_state
-{
-	struct
-	{
-		float angle;
-		float distance;
-	}
-	stick;
-
-	struct
-	{
-		bool down;
-	}
-	button;
-};
-
 bool si_control_parse(const char* name, size_t len, si_control& out_control);
 bool si_control_is_stick(si_control control);
