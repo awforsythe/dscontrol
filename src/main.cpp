@@ -9,6 +9,7 @@
 #include "vc_state.h"
 #include "vc_device.h"
 
+#include "si_list.h"
 #include "si_script.h"
 
 #include "gp_window.h"
@@ -21,20 +22,20 @@
 
 int main(int argc, char* argv[])
 {
+	// Load up the .yml scripts that define our scripted interactions
+	si_list list;
+	if (!list.load(L"..\\data"))
+	{
+		printf("ERROR: Failed to load scripts\n");
+		return 1;
+	}
+
 	// Connect an emulated X360 controller to the ViGEmBus driver
 	vc_state state;
 	vc_device device;
 	if (!device.init())
 	{
 		printf("ERROR: Failed to initialize virtual controller device\n");
-		return 1;
-	}
-
-	// Load a script that defines the interaction we should perform
-	si_script script;
-	if (!script.load("..\\data\\script.yml"))
-	{
-		printf("ERROR: Failed to load test script file\n");
 		return 1;
 	}
 

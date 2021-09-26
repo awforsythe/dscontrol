@@ -7,5 +7,5 @@ struct si_script
 	std::string name;
 
 	si_script();
-	bool load(const char* filepath);
+	bool load(const wchar_t* filepath);
 };
