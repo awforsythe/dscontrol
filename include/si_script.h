@@ -1,11 +1,12 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 struct si_script
 {
 	std::string name;
 
 	si_script();
-	bool load(const wchar_t* filepath);
+	bool parse(std::vector<char>& buf);
 };
