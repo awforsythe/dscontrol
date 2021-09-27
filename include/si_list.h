@@ -10,4 +10,5 @@ struct si_list
 	std::map<std::string, si_script> scripts;
 
 	bool load(const wchar_t* dirpath);
+	const si_script* find(const char* name) const;
 };

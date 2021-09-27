@@ -11,6 +11,7 @@
 
 #include "si_list.h"
 #include "si_script.h"
+#include "si_timeline.h"
 
 #include "gp_window.h"
 #include "gp_process.h"
@@ -29,6 +30,18 @@ int main(int argc, char* argv[])
 		printf("ERROR: Failed to load scripts\n");
 		return 1;
 	}
+
+	// Find the script that we parsed from our test file
+	const si_script* script = list.find("script");
+	if (!script)
+	{
+		printf("ERROR: Failed to find test script\n");
+		return 1;
+	}
+
+	// Load that script into a timeline for playback
+	si_timeline timeline;
+	timeline.load(*script);
 
 	// Connect an emulated X360 controller to the ViGEmBus driver
 	vc_state state;

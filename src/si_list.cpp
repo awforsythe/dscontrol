@@ -112,3 +112,13 @@ bool si_list::load(const wchar_t* dirpath)
 	}
 	return true;
 }
+
+const si_script* si_list::find(const char* name) const
+{
+	const auto found = scripts.find(name);
+	if (found != scripts.cend())
+	{
+		return &found->second;
+	}
+	return nullptr;
+}

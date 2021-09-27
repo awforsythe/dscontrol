@@ -34,5 +34,7 @@ static const char* si_control_names[] =
 	"button_rs"
 };
 
+static const size_t si_control_count = sizeof(si_control_names) / sizeof(si_control_names[0]);
+
 bool si_control_parse(const char* name, size_t len, si_control& out_control);
 bool si_control_is_stick(si_control control);

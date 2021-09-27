@@ -4,8 +4,7 @@
 
 bool si_control_parse(const char* name, size_t len, si_control& out_control)
 {
-	const size_t num_values = sizeof(si_control_names) / sizeof(si_control_names[0]);
-	for (size_t index = 0; index < num_values; index++)
+	for (size_t index = 0; index < si_control_count; index++)
 	{
 		const char* value_name = si_control_names[index];
 		if (strlen(value_name) == len && strncmp(name, value_name, len) == 0)
