@@ -81,36 +81,59 @@ int main(int argc, char* argv[])
 	window.move_to(1920, 0);
 	window.activate();
 
-	Sleep(2000);
+	Sleep(1000);
 
 	// Initialize our interfaces for reading/manipulating the game
 	ds_clock clock(process, addresses);
 	ds_player player(process, addresses);
-	
-	si_evaluator evaluator(timeline);
-	evaluator.start();
 
-	bool finished = false;
-	while (!finished)
+	while (true)
 	{
-		const uint32_t delta = clock.read();
-		if (delta > 0)
+		system("cls");
+
+		// Warp the player to the initial position for the script, then wait
+		player.set_pos(script->warp_pos);
+		Sleep(static_cast<DWORD>(1000.0f * script->settle_time));
+
+		// Center the camera, then wait another brief moment
+		vc_state state;
+		state.update_button(si_control::button_rs, true);
+		device.update(state);
+		Sleep(20);
+		state.update_button(si_control::button_rs, false);
+		device.update(state);
+		Sleep(1000);
+
+		// Start playback of our events
+		si_evaluator evaluator(timeline);
+		evaluator.start();
+
+		bool finished = false;
+		while (!finished)
 		{
-			finished = evaluator.tick();
-			device.update(evaluator.control_state);
+			const uint32_t delta = clock.read();
+			if (delta > 0)
+			{
+				finished = evaluator.tick();
+				device.update(evaluator.control_state);
 
-			const ds_pos pos = player.get_pos();
+				const ds_pos pos = player.get_pos();
 
-			/*
-			SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
-			printf("FRAME: %u        \n", clock.frame_count);
-			printf("   dt: %7.3f ms  \n", clock.real_frame_time * 1000.0);
-			printf("POS X: %7.3f     \n", pos.x);
-			printf("POS Y: %7.3f     \n", pos.y);
-			printf("POS Z: %7.3f     \n", pos.z);
-			printf("ANGLE: %7.3f     \n", pos.angle);
-			printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
-			*/
+				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
+				printf("FRAME: %u        \n", clock.frame_count);
+				printf("   dt: %7.3f ms  \n", clock.real_frame_time * 1000.0);
+				printf("POS X: %7.3f     \n", pos.x);
+				printf("POS Y: %7.3f     \n", pos.y);
+				printf("POS Z: %7.3f     \n", pos.z);
+				printf("ANGLE: %7.3f     \n", pos.angle);
+				printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
+			}
 		}
+
+		state.reset();
+		device.update(state);
+
+		printf("\n\nDone!\n");
+		Sleep(2000);
 	}
 }

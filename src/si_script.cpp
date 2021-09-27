@@ -8,12 +8,15 @@
 static const char* required_keys[] = {
 	"name",
 	"duration",
+	"warp_pos",
 	"events",
 };
 static const size_t num_required_keys = sizeof(required_keys) / sizeof(required_keys[0]);
 
 si_script::si_script()
 	: duration(0.0f)
+	, warp_pos()
+	, settle_time(1.0f)
 {
 }
 
@@ -64,6 +67,41 @@ bool si_script::parse(std::vector<char>& buf)
 	{
 		printf("ERROR: Script duration %0.2f is invalid; duration must be positive\n", duration);
 		return false;
+	}
+
+	// Parse the initial position to start the script from
+	ryml::NodeRef warp_pos_node = root["warp_pos"];
+	if (!warp_pos_node.is_seq() || warp_pos_node.num_children() < 3 || warp_pos_node.num_children() > 4)
+	{
+		printf("ERROR: 'warp_pos' must be a sequence of 3 or 4 numbers\n");
+		return false;
+	}
+	for (size_t coord_index = 0; coord_index < warp_pos_node.num_children(); coord_index++)
+	{
+		ryml::NodeRef coord_node = warp_pos_node.child(coord_index);
+		if (!coord_node.is_val() || !coord_node.val().is_number())
+		{
+			printf("ERROR: 'warp_pos' value at index %zu is not a number\n", coord_index);
+			return false;
+		}
+		coord_node >> *(reinterpret_cast<float*>(&warp_pos.x) + coord_index);
+	}
+
+	// Parse the time to wait between warping and starting the script, if specified
+	if (root.has_child("settle_time"))
+	{
+		ryml::NodeRef settle_time_node = root["settle_time"];
+		if (!settle_time_node.is_keyval() || !settle_time_node.val().is_number())
+		{
+			printf("ERROR: 'settle_time' must be a numeric value\n");
+			return false;
+		}
+		settle_time_node >> settle_time;
+		if (settle_time < 0.0f)
+		{
+			printf("ERROR: 'settle_time' may not be negative\n");
+			return false;
+		}
 	}
 
 	// Process the 'events' sequence to parse each input event

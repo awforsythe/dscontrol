@@ -90,15 +90,11 @@ bool si_evaluator::tick()
 					stick.angle = event->stick.angle;
 					stick.distance = event->stick.distance;
 					control_state.update_stick(event->control, stick.angle, stick.distance);
-
-					printf("%0.2f: '%s' to angle %0.2f, distance %0.2f\n", playback_time, si_control_names[static_cast<size_t>(event->control)], stick.angle, stick.distance);
 				}
 				else
 				{
 					track_state.input.button.is_down = false;
 					control_state.update_button(event->control, false);
-
-					printf("%0.2f: '%s' release\n", playback_time, si_control_names[static_cast<size_t>(event->control)]);
 				}
 
 				track_state.next_event_index = track.size() > track_state.current_event_index + 1 ? track_state.current_event_index + 1 : -1;
@@ -115,8 +111,6 @@ bool si_evaluator::tick()
 					stick.angle = stick.start_angle + progress * (event->stick.angle - stick.start_angle);
 					stick.distance = stick.start_distance + progress * (event->stick.distance - stick.start_distance);
 					control_state.update_stick(event->control, stick.angle, stick.distance);
-
-					printf("%0.2f: '%s' to angle %0.2f, distance %0.2f\n", playback_time, si_control_names[static_cast<size_t>(event->control)], stick.angle, stick.distance);
 				}
 			}
 		}
@@ -139,16 +133,12 @@ bool si_evaluator::tick()
 						stick.angle = next_event->stick.angle;
 						stick.distance = next_event->stick.distance;
 						control_state.update_stick(next_event->control, stick.angle, stick.distance);
-
-						printf("%0.2f: '%s' to angle %0.2f, distance %0.2f\n", playback_time, si_control_names[static_cast<size_t>(next_event->control)], stick.angle, stick.distance);
 					}
 				}
 				else
 				{
 					track_state.input.button.is_down = true;
 					control_state.update_button(next_event->control, true);
-
-					printf("%0.2f: '%s' press\n", playback_time, si_control_names[static_cast<size_t>(next_event->control)]);
 				}
 
 				track_state.current_event_index = track_state.next_event_index;
