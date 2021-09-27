@@ -20,14 +20,15 @@ void si_timeline::reset()
 	}
 }
 
-bool si_timeline::load(const si_script& script)
+bool si_timeline::load(const si_script& in_script)
 {
 	reset();
 
-	assert(script.duration > 0.0f);
+	script = &in_script;
+	assert(script->duration > 0.0f);
 
 	// Add each event onto the respective control track
-	for (const si_event& event : script.events)
+	for (const si_event& event : script->events)
 	{
 		const size_t control_index = static_cast<size_t>(event.control);
 		assert(control_index >= 0 && control_index < si_control_count);

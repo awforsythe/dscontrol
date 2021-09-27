@@ -12,6 +12,7 @@
 #include "si_list.h"
 #include "si_script.h"
 #include "si_timeline.h"
+#include "si_evaluator.h"
 
 #include "gp_window.h"
 #include "gp_process.h"
@@ -44,7 +45,6 @@ int main(int argc, char* argv[])
 	timeline.load(*script);
 
 	// Connect an emulated X360 controller to the ViGEmBus driver
-	vc_state state;
 	vc_device device;
 	if (!device.init())
 	{
@@ -81,18 +81,27 @@ int main(int argc, char* argv[])
 	window.move_to(1920, 0);
 	window.activate();
 
+	Sleep(2000);
+
 	// Initialize our interfaces for reading/manipulating the game
 	ds_clock clock(process, addresses);
 	ds_player player(process, addresses);
 	
-	bool dropped_to_death = false;
-	while (true)
+	si_evaluator evaluator(timeline);
+	evaluator.start();
+
+	bool finished = false;
+	while (!finished)
 	{
 		const uint32_t delta = clock.read();
 		if (delta > 0)
 		{
+			finished = evaluator.tick();
+			device.update(evaluator.control_state);
+
 			const ds_pos pos = player.get_pos();
 
+			/*
 			SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
 			printf("FRAME: %u        \n", clock.frame_count);
 			printf("   dt: %7.3f ms  \n", clock.real_frame_time * 1000.0);
@@ -101,47 +110,7 @@ int main(int argc, char* argv[])
 			printf("POS Z: %7.3f     \n", pos.z);
 			printf("ANGLE: %7.3f     \n", pos.angle);
 			printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
-			printf(" fell: %s        \n", dropped_to_death ? "yes" : "no");
-
-			if (clock.frame_count == 8)
-			{
-				dropped_to_death = false;
-			}
-
-			if (clock.frame_count == 24)
-			{
-				const ds_pos warp_pos(175.0f, 200.0f, 250.0f, 0.0f);
-				player.set_pos(warp_pos);
-			}
-
-			if (clock.frame_count > 100)
-			{
-				if (clock.frame_count < 600)
-				{
-					const float forward_input = min(1.0f, static_cast<float>(clock.frame_count - 100) / 200.0f);
-					state.set_left_stick(0.0f, forward_input);
-					device.update(state);
-					printf("input: forward %5.3f  \n", forward_input);
-				}
-				else if (clock.frame_count < 800)
-				{
-					state.reset();
-					device.update(state);
-					printf("input: OFF                \n");
-				}
-				else if (clock.frame_count >= 800 && !dropped_to_death)
-				{
-					const ds_pos warp_pos(182.0f, 250.0f, 250.0f, 0.0f);
-					player.set_pos(warp_pos);
-					dropped_to_death = true;
-				}
-			}
-
-			if (clock.frame_count > 1600)
-			{
-				clock.reset();
-				addresses.resolve(process);
-			}
+			*/
 		}
 	}
 }
