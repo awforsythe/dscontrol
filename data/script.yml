@@ -1,11 +1,10 @@
 name: script
 warp_pos: [175.0, 300.0, 250.0, 0.0]
 settle_time: 1.0
-duration: 20.0
+duration: 12.0
 events:
-- { at: 1.0, left_stick: { to: north, over: 2.0 } }
-- { at: 5.0, left_stick: { to: east, over: 0.5 }}
-- { at: 6.0, left_stick: { to: north+20, over: 0.25 }}
-- { at: 7.0, left_stick: north-30 }
-- { at: 10.0, left_stick: south }
-- { at: 12.0, left_stick: neutral }
+- { at: 0.0, button_rs: press }
+- { at: 1.0, left_stick: { to: north, over: 0.5 } }
+- { at: 3.0, button_b: press }
+- { at: 6.0, button_b: { hold: 3.0 } }
+- { at: 10.0, button_rb: press }

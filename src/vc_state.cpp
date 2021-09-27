@@ -15,7 +15,7 @@ static int32_t map_analog_thumbstick(float unit_value)
 	return max(-32768, min(32767, shifted));
 }
 
-static void set_bit(uint16_t value, uint16_t bit, bool on)
+static void set_bit(uint16_t& value, uint16_t bit, bool on)
 {
 	if (on)
 	{
