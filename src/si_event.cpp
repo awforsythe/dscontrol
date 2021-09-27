@@ -17,7 +17,7 @@ static bool parse_angle(const char* s, const size_t len, float& out_angle)
 	};
 	static const size_t NUM_DIRECTIONS = 4;
 	static const _direction DIRECTIONS[NUM_DIRECTIONS] = {
-		{ "north", 0.0f }, { "south", 3.14159f }, { "east", 1.5708f }, { "west", -1.5708f },
+		{ "north", 1.5708f }, { "south", -1.5708f }, { "east", 0.0f }, { "west", 3.14159f },
 	};
 
 	// Check our string value against each named direction, to see if it starts with that name
@@ -71,9 +71,11 @@ static bool parse_angle(const char* s, const size_t len, float& out_angle)
 					return false;
 				}
 
+				// We want to treat + as clockwise and - as counter-clockwise: our angle winds CCW, so the sign is inverted
 				// TODO: Wrap
+				const float sign = sign_char == '+' ? -1.0f : 1.0f;
 				const float delta_angle = static_cast<float>(delta_val) / 57.2958f;
-				out_angle += delta_angle;
+				out_angle += delta_angle * sign;
 				return true;
 			}
 		}

@@ -110,8 +110,10 @@ bool si_evaluator::tick()
 				if (event->time < end_time)
 				{
 					const float elapsed = static_cast<float>(playback_time - static_cast<double>(event->time));
-					stick.angle = stick.start_angle + elapsed * (event->stick.angle - stick.start_angle);
-					stick.distance = stick.start_distance + elapsed * (event->stick.distance - stick.start_distance);
+					const float progress = elapsed / event->duration;
+
+					stick.angle = stick.start_angle + progress * (event->stick.angle - stick.start_angle);
+					stick.distance = stick.start_distance + progress * (event->stick.distance - stick.start_distance);
 					control_state.update_stick(event->control, stick.angle, stick.distance);
 
 					printf("%0.2f: '%s' to angle %0.2f, distance %0.2f\n", playback_time, si_control_names[static_cast<size_t>(event->control)], stick.angle, stick.distance);
@@ -129,7 +131,7 @@ bool si_evaluator::tick()
 					si_stick_state& stick = track_state.input.stick;
 					if (next_event->duration > 0.0f)
 					{
-						stick.start_angle = stick.angle;
+						stick.start_angle = stick.distance > 0.0f ? stick.angle : next_event->stick.angle;
 						stick.start_distance = stick.distance;
 					}
 					else
