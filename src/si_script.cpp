@@ -74,6 +74,11 @@ bool si_script::parse(std::vector<char>& buf)
 		return false;
 	}
 	const size_t num_event_nodes = events_node.num_children();
+	if (num_event_nodes < 1)
+	{
+		printf("ERROR: Script must specify at least one event\n");
+		return false;
+	}
 
 	// Each node in the YAML's 'events' list can have multiple control events: loop through initially to count how many unique events we need to store
 	size_t num_events = 0;
