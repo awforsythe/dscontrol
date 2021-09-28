@@ -120,6 +120,9 @@ int main(int argc, char* argv[])
 		// Start playback of our events
 		si_evaluator evaluator(timeline);
 		evaluator.start();
+		clock.frame_count = 0;
+
+		system("cls");
 
 		bool finished = false;
 		while (!finished)
@@ -133,7 +136,6 @@ int main(int argc, char* argv[])
 				const ds_pos pos = player.get_pos();
 
 				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
-				printf("    T+ %7.3f     \n", evaluator.playback_time);
 				printf("FRAME: %u        \n", clock.frame_count);
 				printf("   dt: %7.3f ms  \n", clock.real_frame_time * 1000.0);
 				printf("POS X: %7.3f     \n", pos.x);
@@ -142,13 +144,76 @@ int main(int argc, char* argv[])
 				printf("ANGLE: %7.3f     \n", pos.angle);
 				printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
 				printf("pitch: %7.3f     \n", process.peek<float>(addresses.camera.target_pitch));
+				printf("\n");
+				printf("T+%5.2f     \n", evaluator.playback_time);
+
+				const int32_t num_events = static_cast<int32_t>(script->events.size());
+				int32_t completed_event_index = -1;
+				for (int32_t i = 0; i < num_events; i++)
+				{
+					if (evaluator.playback_time > script->events[i].time)
+					{
+						completed_event_index = i;
+					}
+					else
+					{
+						break;
+					}
+				}
+
+				const int32_t num_events_to_display = 16;
+				int32_t start_index = max(0, completed_event_index - num_events_to_display / 2);
+				int32_t stop_index = min(num_events - 1, start_index + num_events_to_display);
+				if (stop_index - start_index < num_events_to_display)
+				{
+					start_index = stop_index - num_events_to_display;
+				}
+
+				for (int32_t i = start_index; i <= stop_index; i++)
+				{
+					const si_event& event = script->events[i];
+					const bool has_completed_event = i <= completed_event_index;
+					const bool event_is_recent = i == completed_event_index && evaluator.playback_time - event.time < 0.2f;
+					const char* bullet = event_is_recent ? "=>" : (has_completed_event ? "=>" : "- ");
+					const char* control_name = si_control_names[static_cast<uint8_t>(event.control)];
+
+					printf("%s at %5.2f: %s", bullet, event.time, control_name);
+					for (size_t pad = 12 - strlen(control_name); pad > 0; pad--)
+					{
+						putc(' ', stdout);
+					}
+
+					if (si_control_is_stick(event.control))
+					{
+						printf("% 4d deg, % 3d%% ", static_cast<int32_t>(round(event.stick.angle * 57.2957795f)), static_cast<int32_t>(event.stick.distance * 100.0f));
+						if (event.duration > 0.0f)
+						{
+							printf("over %0.2fs         \n", event.duration);
+						}
+						else
+						{
+							printf("instant          \n");
+						}
+					}
+					else
+					{
+						if (event.duration > si_event::SINGLE_FRAME_DURATION)
+						{
+							printf("   (hold %0.2fs)       \n", event.duration);
+						}
+						else
+						{
+							printf("                        \n");
+						}
+					}
+				}
 			}
 		}
 
 		state.reset();
 		device.update(state);
 
-		printf("\n\nDone!\n");
+		printf("Done!\n");
 		Sleep(2000);
 	}
 #endif
