@@ -87,6 +87,18 @@ int main(int argc, char* argv[])
 	ds_clock clock(process, addresses);
 	ds_player player(process, addresses);
 
+#if 0
+	const ds_pos pos = player.get_pos();
+
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
+	printf("FRAME: %u        \n", clock.frame_count);
+	printf("   dt: %7.3f ms  \n", clock.real_frame_time * 1000.0);
+	printf("POS X: %7.3f     \n", pos.x);
+	printf("POS Y: %7.3f     \n", pos.y);
+	printf("POS Z: %7.3f     \n", pos.z);
+	printf("ANGLE: %7.3f     \n", pos.angle);
+	printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
+#else
 	while (true)
 	{
 		system("cls");
@@ -97,6 +109,7 @@ int main(int argc, char* argv[])
 
 		// Center the camera, then wait another brief moment
 		vc_state state;
+		process.poke<float>(addresses.camera.target_pitch, 0.0f);
 		state.update_button(si_control::button_rs, true);
 		device.update(state);
 		Sleep(20);
@@ -120,6 +133,7 @@ int main(int argc, char* argv[])
 				const ds_pos pos = player.get_pos();
 
 				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
+				printf("    T+ %7.3f     \n", evaluator.playback_time);
 				printf("FRAME: %u        \n", clock.frame_count);
 				printf("   dt: %7.3f ms  \n", clock.real_frame_time * 1000.0);
 				printf("POS X: %7.3f     \n", pos.x);
@@ -127,6 +141,7 @@ int main(int argc, char* argv[])
 				printf("POS Z: %7.3f     \n", pos.z);
 				printf("ANGLE: %7.3f     \n", pos.angle);
 				printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
+				printf("pitch: %7.3f     \n", process.peek<float>(addresses.camera.target_pitch));
 			}
 		}
 
@@ -136,4 +151,5 @@ int main(int argc, char* argv[])
 		printf("\n\nDone!\n");
 		Sleep(2000);
 	}
+#endif
 }

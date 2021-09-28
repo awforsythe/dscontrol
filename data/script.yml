@@ -1,17 +1,29 @@
 name: script
-duration: 12.5
-warp_pos: [175.0, 197.0, 250.0, -1.53]
+duration: 18.0
+warp_pos: [247.6, 125.5, 255.0, 1.5708]
 settle_time: 1.5
 events:
-- { at: 1.0, left_stick: { to: north, over: 0.2 } }
-- { at: 2.0, left_stick: { to: north+30, over: 0.7 } }
-- { at: 2.9, left_stick: east }
-- { at: 3.0, button_b: press }
-- { at: 3.1, left_stick: north }
-- { at: 4.0, button_b: { hold: 3.0 } }
-- { at: 4.0, left_stick: { to: north+20, over: 1.0 } }
-- { at: 5.0, left_stick: { to: north, over: 1.0 } }
-- { at: 10.0, button_rb: press }
-- { at: 10.0, left_stick: neutral }
-- { at: 11.0, button_b: press }
-- { at: 12.0, left_stick: north }
+- {at: 1.0, left_stick: {to: south, over: 0.2}}
+- {at: 3.0, left_stick: neutral}
+- {at: 3.5, button_rs: press}
+- {at: 4.0, button_rb: press}
+- {at: 5.0, left_stick: north}
+- {at: 5.01, button_rt: press}
+- {at: 6.5, right_stick: {to: north, dist: 0.5, over: 0.5}}
+- {at: 8.0, right_stick: {to: neutral, over: 0.5}}
+- {at: 8.5, left_stick: {to: north-30, dist: 0.75, over: 1.0}}
+- {at: 9.0, button_b: {hold: 2.5}}
+- {at: 9.5, left_stick: north}
+- {at: 11.5, left_stick: {to: east-20, over: 0.25}}
+- {at: 12.0, button_b: press}
+- {at: 12.1, left_stick: west}
+- {at: 12.1, button_b: {hold: 5.0}}
+- {at: 14.9, button_rb: press}
+- {at: 15.0, left_stick: neutral}
+- {at: 16.0, left_stick: {to: north, dist: 0.7}}
+- {at: 16.1, left_stick: neutral}
+- {at: 16.1, right_stick: {to: east, over: 0.1}}
+- {at: 16.5, right_stick: {to: east+30, over: 0.2}}
+- {at: 16.9, right_stick: {to: south+10, over: 0.2}}
+- {at: 17.3, right_stick: {to: neutral, over: 0.1}}
+

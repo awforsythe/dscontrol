@@ -10,6 +10,7 @@ bool ds_addresses::resolve(const gp_process& process)
 	// Use a buffer to read blocks of memory from landmarks (a.k.a. "AOBs")
 	std::vector<uint8_t> buf;
 
+	// Resolve addresses for player stats (including playtime accumulator)
 	const uint32_t stats_landmark_offset = 0x728E50;
 	const gp_landmark stats_landmark("48 8B 05 xx xx xx xx 45 33 ED 48 8B F1 48 85 C0");
 
@@ -34,6 +35,50 @@ bool ds_addresses::resolve(const gp_process& process)
 		printf("ERROR: Failed to resolve stats address from landmark\n");
 		return false;
 	}
+
+	// Resolve addresses for camera state
+	const uint32_t camera_landmark_offset = 0x24E37B;
+	const gp_landmark camera_landmark("48 8B 05 xx xx xx xx 48 89 48 60 E8");
+
+	buf.resize(camera_landmark.size());
+	uint8_t* camera_landmark_addr = process.to_addr(camera_landmark_offset);
+	if (!process.read(camera_landmark_addr, buf.data(), buf.size()))
+	{
+		printf("ERROR: Failed to read camera landmark byte pattern\n");
+		return false;
+	}
+	if (!camera_landmark.match(buf))
+	{
+		printf("ERROR: Bytes at offset 0x%X do not match expected pattern\n", camera_landmark_offset);
+		return false;
+	}
+
+	uint32_t offset_from_camera_landmark = process.peek<uint32_t>(camera_landmark_addr + 3);
+	uint8_t* camera_ptr_addr = camera_landmark_addr + offset_from_camera_landmark + 7;
+	uint8_t* camera_addr = process.peek<uint8_t*>(camera_ptr_addr);
+	if (!camera_addr)
+	{
+		printf("ERROR: Failed to resolve camera address from landmark\n");
+		return false;
+	}
+
+	uint8_t* camera_child1_ptr_addr = camera_addr + 0x60;
+	uint8_t* camera_child1_addr = process.peek<uint8_t*>(camera_child1_ptr_addr);
+	if (!camera_child1_addr)
+	{
+		printf("ERROR: Failed to resolve camera child 1 address from WorldChr\n");
+		return false;
+	}
+
+	uint8_t* camera_child2_ptr_addr = camera_child1_addr + 0x60;
+	uint8_t* camera_child2_addr = process.peek<uint8_t*>(camera_child2_ptr_addr);
+	if (!camera_child1_addr)
+	{
+		printf("ERROR: Failed to resolve camera child 2 address from WorldChr\n");
+		return false;
+	}
+
+	camera.target_pitch = camera_child2_addr + 0x150;
 
 	// This address is an integer counter that steadily ticks up to represent the
 	// player's total played time: useful for synchronization

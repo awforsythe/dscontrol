@@ -10,6 +10,12 @@ struct ds_addresses
 
 	struct
 	{
+		uint8_t* target_pitch;
+	}
+	camera;
+
+	struct
+	{
 		uint8_t* pos;
 		uint8_t* angle;
 		uint8_t* latch;
