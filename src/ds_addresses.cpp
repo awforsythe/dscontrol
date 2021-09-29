@@ -1,156 +1,54 @@
 #include "ds_addresses.h"
 
-#include <vector>
+#include <cstdio>
 
 #include "gp_process.h"
-#include "gp_landmark.h"
+#include "ds_bases.h"
 
-bool ds_addresses::resolve(const gp_process& process)
+bool ds_addresses::resolve(const gp_process& process, const ds_bases& bases)
 {
-	// Use a buffer to read blocks of memory from landmarks (a.k.a. "AOBs")
-	std::vector<uint8_t> buf;
-
-	// Resolve addresses for player stats (including playtime accumulator)
-	const uint32_t stats_landmark_offset = 0x728E50;
-	const gp_landmark stats_landmark("48 8B 05 xx xx xx xx 45 33 ED 48 8B F1 48 85 C0");
-
-	buf.resize(stats_landmark.size());
-	uint8_t* stats_landmark_addr = process.to_addr(stats_landmark_offset);
-	if (!process.read(stats_landmark_addr, buf.data(), buf.size()))
-	{
-		printf("ERROR: Failed to read stats landmark byte pattern\n");
-		return false;
-	}
-	if (!stats_landmark.match(buf))
-	{
-		printf("ERROR: Bytes at offset 0x%X do not match expected pattern\n", stats_landmark_offset);
-		return false;
-	}
-
-	uint32_t offset_from_stats_landmark = process.peek<uint32_t>(stats_landmark_addr + 3);
-	uint8_t* stats_ptr_addr = stats_landmark_addr + offset_from_stats_landmark + 7;
-	uint8_t* stats_addr = process.peek<uint8_t*>(stats_ptr_addr);
-	if (!stats_addr)
-	{
-		printf("ERROR: Failed to resolve stats address from landmark\n");
-		return false;
-	}
-
-	// Resolve addresses for camera state
-	const uint32_t camera_landmark_offset = 0x24E37B;
-	const gp_landmark camera_landmark("48 8B 05 xx xx xx xx 48 89 48 60 E8");
-
-	buf.resize(camera_landmark.size());
-	uint8_t* camera_landmark_addr = process.to_addr(camera_landmark_offset);
-	if (!process.read(camera_landmark_addr, buf.data(), buf.size()))
-	{
-		printf("ERROR: Failed to read camera landmark byte pattern\n");
-		return false;
-	}
-	if (!camera_landmark.match(buf))
-	{
-		printf("ERROR: Bytes at offset 0x%X do not match expected pattern\n", camera_landmark_offset);
-		return false;
-	}
-
-	uint32_t offset_from_camera_landmark = process.peek<uint32_t>(camera_landmark_addr + 3);
-	uint8_t* camera_ptr_addr = camera_landmark_addr + offset_from_camera_landmark + 7;
-	uint8_t* camera_addr = process.peek<uint8_t*>(camera_ptr_addr);
-	if (!camera_addr)
-	{
-		printf("ERROR: Failed to resolve camera address from landmark\n");
-		return false;
-	}
-
-	uint8_t* camera_child1_ptr_addr = camera_addr + 0x60;
-	uint8_t* camera_child1_addr = process.peek<uint8_t*>(camera_child1_ptr_addr);
-	if (!camera_child1_addr)
-	{
-		printf("ERROR: Failed to resolve camera child 1 address from WorldChr\n");
-		return false;
-	}
-
-	uint8_t* camera_child2_ptr_addr = camera_child1_addr + 0x60;
-	uint8_t* camera_child2_addr = process.peek<uint8_t*>(camera_child2_ptr_addr);
-	if (!camera_child1_addr)
-	{
-		printf("ERROR: Failed to resolve camera child 2 address from WorldChr\n");
-		return false;
-	}
-
-	camera.target_pitch = camera_child2_addr + 0x150;
-
 	// This address is an integer counter that steadily ticks up to represent the
 	// player's total played time: useful for synchronization
-	playtime = stats_addr + 0xA4;
+	playtime = bases.stats + 0xA4;
 
-	// We expect to find this unique pattern of bytes at the given address: it
-	// contains a pointer that will lead us to world character data
-	const uint32_t world_chr_landmark_offset = 0x7C0206;
-	const gp_landmark world_chr_landmark("48 8B 05 xx xx xx xx 48 8B 48 68 48 85 C9 0F 84 xx xx xx xx 48 39 5E 10 0F 84 xx xx xx xx 48");
-
-	// Check for the landmark at that offset: verify that we can read those
-	// bytes and that they match the expected pattern
-	buf.resize(world_chr_landmark.size());
-	uint8_t* world_chr_landmark_addr = process.to_addr(world_chr_landmark_offset);
-	if (!process.read(world_chr_landmark_addr, buf.data(), buf.size()))
+	// Follow some pointers to get to a struct that holds camera data
+	uint8_t* camera_addr_0 = process.peek<uint8_t*>(bases.camera + 0x60);
+	uint8_t* camera_addr_1 = process.peek<uint8_t*>(camera_addr_0 + 0x60);
+	if (!camera_addr_1)
 	{
-		printf("ERROR: Failed to read WorldChr landmark byte pattern\n");
-		return false;
-	}
-	if (!world_chr_landmark.match(buf))
-	{
-		printf("ERROR: Bytes at offset 0x%X do not match expected pattern\n", world_chr_landmark_offset);
+		printf("ERROR: Failed to resolve address for camera\n");
 		return false;
 	}
 
-	// 3 bytes into the landmark is a 4-byte offset: read that value, then move
-	// down from the landmark by that distance, plus 7 bytes. At *that* address
-	// is a pointer to the WorldChr data for the player.
-	uint32_t offset_from_world_chr_landmark = process.peek<uint32_t>(world_chr_landmark_addr + 3);
-	uint8_t* world_chr_ptr_addr = world_chr_landmark_addr + offset_from_world_chr_landmark + 7;
-	uint8_t* world_chr_addr = process.peek<uint8_t*>(world_chr_ptr_addr);
-	if (!world_chr_addr)
-	{
-		printf("ERROR: Failed to resolve WorldChr address from landmark\n");
-		return false;
-	}
+	// Writing to this address will set the target camera pitch
+	camera.target_pitch = camera_addr_1 + 0x150;
 
-	// Within the WorldChr data is a pointer to the ChrData1 struct
-	uint8_t* chr_data_1_ptr_addr = world_chr_addr + 0x68;
-	uint8_t* chr_data_1_addr = process.peek<uint8_t*>(chr_data_1_ptr_addr);
-	if (!chr_data_1_addr)
+	// WorldChar has a pointer to ChrData1 at 0x68 bytes in
+	// ChrData1 has a pointer to ChrMapData at 0x68 bytes in
+	uint8_t* chr_data_1 = process.peek<uint8_t*>(bases.world_chr + 0x68);
+	uint8_t* chr_map_data = process.peek<uint8_t*>(chr_data_1 + 0x68);
+	if (!chr_map_data)
 	{
-		printf("ERROR: Failed to resolve ChrData1 address from WorldChr\n");
-		return false;
-	}
-
-	// ChrData1 holds a pointer to the ChrMapData struct
-	uint8_t* chr_map_data_ptr_addr = chr_data_1_addr + 0x68;
-	uint8_t* chr_map_data_addr = process.peek<uint8_t*>(chr_map_data_ptr_addr);
-	if (!chr_map_data_addr)
-	{
-		printf("ERROR: Failed to resolve ChrMapData address from ChrData1\n");
+		printf("ERRROR: Failed to resolve ChrMapData address from WorldChr\n");
 		return false;
 	}
 
 	// Writing to these members of ChrMapData will allow us to warp the player
-	chr_warp.pos = chr_map_data_addr + 0x110;
-	chr_warp.angle = chr_map_data_addr + 0x124;
-	chr_warp.latch = chr_map_data_addr + 0x108;
+	chr_warp.pos = chr_map_data + 0x110;
+	chr_warp.angle = chr_map_data + 0x124;
+	chr_warp.latch = chr_map_data + 0x108;
 
-	// ChrMapData includes a pointer to a ChrPosData struct
-	uint8_t* chr_pos_data_ptr_addr = chr_map_data_addr + 0x28;
-	uint8_t* chr_pos_data_addr = process.peek<uint8_t*>(chr_pos_data_ptr_addr);
-	if (!chr_pos_data_addr)
+	// ChrMapData has a pointer to a ChrPosData struct, at 0x28 bytes in
+	uint8_t* chr_pos_data = process.peek<uint8_t*>(chr_map_data + 0x28);
+	if (!chr_pos_data)
 	{
 		printf("ERROR: Failed to resolve ChrPosData address from ChrMapData\n");
 		return false;
 	}
 
 	// Reading these values will give us real-time player position data
-	chr_pos.pos = chr_pos_data_addr + 0x10;
-	chr_pos.angle = chr_pos_data_addr + 0x4;
+	chr_pos.pos = chr_pos_data + 0x10;
+	chr_pos.angle = chr_pos_data + 0x4;
 
 	return true;
 }

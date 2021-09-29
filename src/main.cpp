@@ -17,6 +17,7 @@
 #include "gp_window.h"
 #include "gp_process.h"
 
+#include "ds_bases.h"
 #include "ds_addresses.h"
 #include "ds_pos.h"
 #include "ds_clock.h"
@@ -69,8 +70,15 @@ int main(int argc, char* argv[])
 	}
 
 	// Peek memory and follow pointers to resolve addresses to relevant values
+	ds_bases bases;
+	if (!bases.resolve(process))
+	{
+		printf("ERROR: Failed to resolve base addresses from landmark byte patterns\n");
+		return 1;
+	}
+
 	ds_addresses addresses;
-	if (!addresses.resolve(process))
+	if (!addresses.resolve(process, bases))
 	{
 		printf("ERROR: Failed to resolve addresses\n");
 		return 1;

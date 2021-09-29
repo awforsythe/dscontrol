@@ -3,6 +3,7 @@
 #include <cinttypes>
 
 struct gp_process;
+struct ds_bases;
 
 struct ds_addresses
 {
@@ -29,5 +30,5 @@ struct ds_addresses
 	}
 	chr_pos;
 
-	bool resolve(const gp_process& process);
+	bool resolve(const gp_process& process, const ds_bases& bases);
 };

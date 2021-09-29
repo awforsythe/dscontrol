@@ -45,14 +45,9 @@ gp_landmark::gp_landmark(const std::string& s)
 	assert(flags.size() == num_bytes);
 }
 
-bool gp_landmark::match(const std::vector<uint8_t>& buf) const
+bool gp_landmark::match(const uint8_t* buf) const
 {
-	if (buf.size() != size())
-	{
-		return false;
-	}
-
-	for (size_t i = 0; i < buf.size(); i++)
+	for (size_t i = 0; i < bytes.size(); i++)
 	{
 		const bool is_wildcard = (flags[i] & FLAG_ANY_VALUE) != 0;
 		if (!is_wildcard && buf[i] != bytes[i])

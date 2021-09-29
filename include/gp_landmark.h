@@ -13,7 +13,7 @@ struct gp_landmark
 	std::vector<uint8_t> flags;
 
 	gp_landmark(const std::string& s);
-	bool match(const std::vector<uint8_t>& bytes) const;
+	bool match(const uint8_t* bytes) const;
 
 	inline size_t size() const { return bytes.size(); }
 };
