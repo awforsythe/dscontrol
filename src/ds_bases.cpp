@@ -8,7 +8,7 @@
 static const size_t LANDMARK_BUFFER_SIZE = 128;
 static uint8_t s_landmark_buffer[LANDMARK_BUFFER_SIZE];
 
-bool resolve_landmark(const gp_process& process, const gp_landmark& landmark, uint32_t offset, uint8_t*& out_addr)
+bool read_landmark(const gp_process& process, const gp_landmark& landmark, uint32_t offset, uint8_t*& out_addr)
 {
 	// We have some known, unique 'landmark' byte patterns that should exist at
 	// predictable offsets within the main game executable - these are typically
@@ -38,18 +38,34 @@ bool resolve_landmark(const gp_process& process, const gp_landmark& landmark, ui
 		return false;
 	}
 
+	out_addr = landmark_addr;
+	return true;
+}
+
+bool follow_landmark(const gp_process& process, uint8_t*& in_out_addr)
+{
 	// 3 bytes into the landmark is a 4-byte offset: read that value, then move
 	// down from the landmark by that distance, plus 7 bytes. At *that* address
 	// is a pointer to the struct this landmark ultimately points to.
+	uint8_t* const landmark_addr = in_out_addr;
 	uint32_t offset_from_landmark = process.peek<uint32_t>(landmark_addr + 3);
 	uint8_t* ptr_addr = landmark_addr + offset_from_landmark + 7;
-	out_addr = process.peek<uint8_t*>(ptr_addr);
-	if (!out_addr)
+	in_out_addr = process.peek<uint8_t*>(ptr_addr);
+	if (!in_out_addr)
 	{
 		printf("ERROR: Failed to resolve address from landmark\n");
 		return false;
 	}
 	return true;
+}
+
+bool resolve_landmark(const gp_process& process, const gp_landmark& landmark, uint32_t offset, uint8_t*& out_addr)
+{
+	if (read_landmark(process, landmark, offset, out_addr))
+	{
+		return follow_landmark(process, out_addr);
+	}
+	return false;
 }
 
 bool ds_bases::resolve(const gp_process& process)
@@ -75,7 +91,31 @@ bool ds_bases::resolve(const gp_process& process)
 	const gp_landmark world_chr_landmark("48 8B 05 xx xx xx xx 48 8B 48 68 48 85 C9 0F 84 xx xx xx xx 48 39 5E 10 0F 84 xx xx xx xx 48");
 	if (!resolve_landmark(process, world_chr_landmark, 0x7C0206, world_chr))
 	{
-		printf("ERROR: Failed to resolve base address from WorldChar landmark\n");
+		printf("ERROR: Failed to resolve base address from WorldChr landmark\n");
+		return false;
+	}
+
+	// ChrClass; top-level struct that identifies the player
+	const gp_landmark chr_class_landmark("48 8B 05 xx xx xx xx 48 85 C0 xx xx F3 0F 58 80 AC 00 00 00");
+	if (!resolve_landmark(process, chr_class_landmark, 0x755DB0, chr_class))
+	{
+		printf("ERROR: Failed to resolve base address from ChrClass landmark\n");
+		return false;
+	}
+
+	// ChrClassWarp; includes data related to our last warp/reload point (i.e. bonfire)
+	const gp_landmark chr_class_warp_landmark("48 8B 05 xx xx xx xx 66 0F 7F 80 xx xx xx xx 0F 28 02 66 0F 7F 80 xx xx xx xx C6 80");
+	if (!resolve_landmark(process, chr_class_warp_landmark, 0x2C89B3, chr_class_warp))
+	{
+		printf("ERROR: Failed to resolve base address from ChrClassWarp landmark\n");
+		return false;
+	}
+
+	// BonfireWarp; records the last bonfire we spawned at
+	const gp_landmark bonfire_warp_landmark("48 89 5C 24 08 57 48 83 EC 20 48 8B D9 8B FA 48 8B 49 08 48 85 C9 0F 84 xx xx xx xx E8 xx xx xx xx 48 8B 4B 08");
+	if (!read_landmark(process, bonfire_warp_landmark, 0x485CE0, bonfire_warp))
+	{
+		printf("ERROR: Failed to resolve base address from BonfireWarp landmark\n");
 		return false;
 	}
 
