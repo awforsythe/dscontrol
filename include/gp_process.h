@@ -13,7 +13,8 @@ struct gp_process
 
 	bool open(void* window_handle, const wchar_t* module_name);
 	bool read(const uint8_t* addr, uint8_t* buf, size_t size) const;
-	bool write(uint8_t* addr, const uint8_t* buf, size_t size) const;
+	bool write(uint8_t* addr, const uint8_t* buf, size_t size);
+	bool inject_and_run(const uint8_t* buf, size_t size);
 	
 	template <typename T>
 	T peek(const uint8_t* addr) const

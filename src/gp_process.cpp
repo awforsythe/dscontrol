@@ -79,7 +79,7 @@ bool gp_process::read(const uint8_t* addr, uint8_t* buf, size_t size) const
 	return false;
 }
 
-bool gp_process::write(uint8_t* addr, const uint8_t* buf, size_t size) const
+bool gp_process::write(uint8_t* addr, const uint8_t* buf, size_t size)
 {
 	assert(addr);
 
@@ -90,4 +90,26 @@ bool gp_process::write(uint8_t* addr, const uint8_t* buf, size_t size) const
 		return true;
 	}
 	return false;
+}
+
+bool gp_process::inject_and_run(const uint8_t* buf, size_t size)
+{
+	bool success = false;
+	void* process_memory = VirtualAllocEx(handle, nullptr, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	if (process_memory)
+	{
+		if (write(reinterpret_cast<uint8_t*>(process_memory), buf, size))
+		{
+			LPTHREAD_START_ROUTINE func = reinterpret_cast<LPTHREAD_START_ROUTINE>(process_memory);
+			HANDLE thread = CreateRemoteThread(handle, nullptr, 0, func, nullptr, 0, nullptr);
+			if (thread != nullptr)
+			{
+				WaitForSingleObject(thread, INFINITE);
+				CloseHandle(thread);
+				success = true;
+			}
+		}
+		VirtualFreeEx(handle, process_memory, 0, MEM_RELEASE);
+	}
+	return success;
 }

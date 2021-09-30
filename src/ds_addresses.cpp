@@ -50,5 +50,10 @@ bool ds_addresses::resolve(const gp_process& process, const ds_bases& bases)
 	chr_pos.pos = chr_pos_data + 0x10;
 	chr_pos.angle = chr_pos_data + 0x4;
 
+	// This ID indicates the bonfire we last rested at
+	chr_class_warp.last_bonfire = bases.chr_class_warp + 0x10 + 0xB24;
+
+
+
 	return true;
 }

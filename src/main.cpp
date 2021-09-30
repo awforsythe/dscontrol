@@ -22,6 +22,7 @@
 #include "ds_pos.h"
 #include "ds_clock.h"
 #include "ds_player.h"
+#include "ds_inject.h"
 
 int main(int argc, char* argv[])
 {
@@ -89,12 +90,6 @@ int main(int argc, char* argv[])
 	window.move_to(1920, 0);
 	window.activate();
 
-	Sleep(1000);
-
-	// Initialize our interfaces for reading/manipulating the game
-	ds_clock clock(process, addresses);
-	ds_player player(process, addresses);
-
 #if 0
 	const ds_pos pos = player.get_pos();
 
@@ -109,13 +104,32 @@ int main(int argc, char* argv[])
 #else
 	while (true)
 	{
-		system("cls");
+		// Warp to the desired bonfire to reset and reload the area
+		const uint32_t bonfire_id = 1510980;
+		printf("Warping to bonfire %u...\n", bonfire_id);
+		ds_inject::warp_to_bonfire(process, bases, addresses, bonfire_id);
+		Sleep(5000);
+
+		// Memory will have changed; re-resolve the required addresses
+		if (!bases.resolve(process))
+		{
+			printf("ERROR: Failed to resolve base addresses from after warp\n");
+			return 1;
+		}
+		if (!addresses.resolve(process, bases))
+		{
+			printf("ERROR: Failed to resolve addresses after warp\n");
+			return 1;
+		}
 
 		// Warp the player to the initial position for the script, then wait
+		ds_player player(process, addresses);
+		printf("Warping to start position and waiting %0.2f seconds...\n", script->settle_time);
 		player.set_pos(script->warp_pos);
 		Sleep(static_cast<DWORD>(1000.0f * script->settle_time));
 
 		// Center the camera, then wait another brief moment
+		printf("Centering camera...\n");
 		vc_state state;
 		process.poke<float>(addresses.camera.target_pitch, 0.0f);
 		state.update_button(si_control::button_rs, true);
@@ -126,9 +140,9 @@ int main(int argc, char* argv[])
 		Sleep(1000);
 
 		// Start playback of our events
+		ds_clock clock(process, addresses);
 		si_evaluator evaluator(timeline);
 		evaluator.start();
-		clock.frame_count = 0;
 
 		system("cls");
 

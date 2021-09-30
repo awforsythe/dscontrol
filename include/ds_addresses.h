@@ -30,5 +30,11 @@ struct ds_addresses
 	}
 	chr_pos;
 
+	struct
+	{
+		uint8_t* last_bonfire;
+	}
+	chr_class_warp;
+
 	bool resolve(const gp_process& process, const ds_bases& bases);
 };

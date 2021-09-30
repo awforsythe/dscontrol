@@ -92,6 +92,7 @@
     <ClCompile Include="..\src\ds_addresses.cpp" />
     <ClCompile Include="..\src\ds_bases.cpp" />
     <ClCompile Include="..\src\ds_clock.cpp" />
+    <ClCompile Include="..\src\ds_inject.cpp" />
     <ClCompile Include="..\src\gp_landmark.cpp" />
     <ClCompile Include="..\src\ds_player.cpp" />
     <ClCompile Include="..\src\gp_process.cpp" />
@@ -109,6 +110,7 @@
     <ClInclude Include="..\include\ds_addresses.h" />
     <ClInclude Include="..\include\ds_bases.h" />
     <ClInclude Include="..\include\ds_clock.h" />
+    <ClInclude Include="..\include\ds_inject.h" />
     <ClInclude Include="..\include\gp_landmark.h" />
     <ClInclude Include="..\include\ds_player.h" />
     <ClInclude Include="..\include\ds_pos.h" />
