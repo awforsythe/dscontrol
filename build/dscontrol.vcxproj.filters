@@ -21,7 +21,7 @@
     <ClCompile Include="..\src\gp_process.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\gp_landmark.cpp">
+    <ClCompile Include="..\src\gp_bytepattern.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ds_addresses.cpp">
@@ -71,7 +71,7 @@
     <ClInclude Include="..\include\gp_process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\gp_landmark.h">
+    <ClInclude Include="..\include\gp_bytepattern.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\ds_addresses.h">

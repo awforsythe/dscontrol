@@ -2,13 +2,13 @@
 
 #include <cassert>
 
-#include "gp_landmark.h"
+#include "gp_bytepattern.h"
 #include "gp_process.h"
 
 static const size_t LANDMARK_BUFFER_SIZE = 128;
 static uint8_t s_landmark_buffer[LANDMARK_BUFFER_SIZE];
 
-bool read_landmark(const gp_process& process, const gp_landmark& landmark, uint32_t offset, uint8_t*& out_addr)
+bool read_landmark(const gp_process& process, const gp_bytepattern& landmark, uint32_t offset, uint8_t*& out_addr)
 {
 	// We have some known, unique 'landmark' byte patterns that should exist at
 	// predictable offsets within the main game executable - these are typically
@@ -59,7 +59,7 @@ bool follow_landmark(const gp_process& process, uint8_t*& in_out_addr, bool jump
 	return true;
 }
 
-bool resolve_landmark(const gp_process& process, const gp_landmark& landmark, uint32_t offset, uint8_t*& out_addr, bool jump)
+bool resolve_landmark(const gp_process& process, const gp_bytepattern& landmark, uint32_t offset, uint8_t*& out_addr, bool jump)
 {
 	if (read_landmark(process, landmark, offset, out_addr))
 	{
@@ -71,7 +71,7 @@ bool resolve_landmark(const gp_process& process, const gp_landmark& landmark, ui
 bool ds_bases::resolve(const gp_process& process)
 {
 	// a.k.a. BaseB; leads us to elapsed play time counter
-	const gp_landmark stats_landmark("48 8B 05 xx xx xx xx 45 33 ED 48 8B F1 48 85 C0");
+	const gp_bytepattern stats_landmark("48 8B 05 xx xx xx xx 45 33 ED 48 8B F1 48 85 C0");
 	if (!resolve_landmark(process, stats_landmark, 0x728E50, stats, true))
 	{
 		printf("ERROR: Failed to resolve base address from stats landmark\n");
@@ -79,7 +79,7 @@ bool ds_bases::resolve(const gp_process& process)
 	}
 
 	// a.k.a. BaseCAR; leads us to target camera pitch value
-	const gp_landmark camera_landmark("48 8B 05 xx xx xx xx 48 89 48 60 E8");
+	const gp_bytepattern camera_landmark("48 8B 05 xx xx xx xx 48 89 48 60 E8");
 	if (!resolve_landmark(process, camera_landmark, 0x24E37B, camera, true))
 	{
 		printf("ERROR: Failed to resolve base address from camera landmark\n");
@@ -88,7 +88,7 @@ bool ds_bases::resolve(const gp_process& process)
 
 	// WorldChr; top-level struct that contains data regarding player characters
 	// as represented in the world
-	const gp_landmark world_chr_landmark("48 8B 05 xx xx xx xx 48 8B 48 68 48 85 C9 0F 84 xx xx xx xx 48 39 5E 10 0F 84 xx xx xx xx 48");
+	const gp_bytepattern world_chr_landmark("48 8B 05 xx xx xx xx 48 8B 48 68 48 85 C9 0F 84 xx xx xx xx 48 39 5E 10 0F 84 xx xx xx xx 48");
 	if (!resolve_landmark(process, world_chr_landmark, 0x7C0206, world_chr, true))
 	{
 		printf("ERROR: Failed to resolve base address from WorldChr landmark\n");
@@ -96,7 +96,7 @@ bool ds_bases::resolve(const gp_process& process)
 	}
 
 	// ChrClass; top-level struct that identifies the player
-	const gp_landmark chr_class_landmark("48 8B 05 xx xx xx xx 48 85 C0 xx xx F3 0F 58 80 AC 00 00 00");
+	const gp_bytepattern chr_class_landmark("48 8B 05 xx xx xx xx 48 85 C0 xx xx F3 0F 58 80 AC 00 00 00");
 	if (!resolve_landmark(process, chr_class_landmark, 0x755DB0, chr_class, false))
 	{
 		printf("ERROR: Failed to resolve base address from ChrClass landmark\n");
@@ -104,7 +104,7 @@ bool ds_bases::resolve(const gp_process& process)
 	}
 
 	// ChrClassWarp; includes data related to our last warp/reload point (i.e. bonfire)
-	const gp_landmark chr_class_warp_landmark("48 8B 05 xx xx xx xx 66 0F 7F 80 xx xx xx xx 0F 28 02 66 0F 7F 80 xx xx xx xx C6 80");
+	const gp_bytepattern chr_class_warp_landmark("48 8B 05 xx xx xx xx 66 0F 7F 80 xx xx xx xx 0F 28 02 66 0F 7F 80 xx xx xx xx C6 80");
 	if (!resolve_landmark(process, chr_class_warp_landmark, 0x2C89B3, chr_class_warp, true))
 	{
 		printf("ERROR: Failed to resolve base address from ChrClassWarp landmark\n");
@@ -112,7 +112,7 @@ bool ds_bases::resolve(const gp_process& process)
 	}
 
 	// BonfireWarp; records the last bonfire we spawned at
-	const gp_landmark bonfire_warp_landmark("48 89 5C 24 08 57 48 83 EC 20 48 8B D9 8B FA 48 8B 49 08 48 85 C9 0F 84 xx xx xx xx E8 xx xx xx xx 48 8B 4B 08");
+	const gp_bytepattern bonfire_warp_landmark("48 89 5C 24 08 57 48 83 EC 20 48 8B D9 8B FA 48 8B 49 08 48 85 C9 0F 84 xx xx xx xx E8 xx xx xx xx 48 8B 4B 08");
 	if (!read_landmark(process, bonfire_warp_landmark, 0x485CE0, bonfire_warp))
 	{
 		printf("ERROR: Failed to resolve base address from BonfireWarp landmark\n");
