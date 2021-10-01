@@ -3,10 +3,9 @@
 #include <cinttypes>
 
 struct gp_process;
-struct ds_bases;
-struct ds_addresses;
+struct ds_memmap;
 
 namespace ds_inject
 {
-	bool warp_to_bonfire(gp_process& process, const ds_bases& bases, const ds_addresses& addresses, uint32_t bonfire_id);
+	bool warp_to_bonfire(gp_process& process, const ds_memmap& memmap, uint32_t bonfire_id);
 };

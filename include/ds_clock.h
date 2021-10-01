@@ -3,7 +3,7 @@
 #include <cinttypes>
 
 struct gp_process;
-struct ds_addresses;
+struct ds_memmap;
 
 struct ds_clock
 {
@@ -14,7 +14,7 @@ struct ds_clock
 	uint64_t prev_frame_timestamp;
 	double real_frame_time;
 
-	ds_clock(gp_process& in_process, ds_addresses& in_addresses);
+	ds_clock(gp_process& in_process, ds_memmap& in_memmap);
 	uint32_t read();
 	
 	inline void reset() { frame_count = 0; }

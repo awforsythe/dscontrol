@@ -12,7 +12,7 @@ struct gp_bytepattern
 	std::vector<uint8_t> bytes;
 	std::vector<uint8_t> flags;
 
-	gp_bytepattern(const std::string& s);
+	gp_bytepattern(const char* s);
 	bool match(const uint8_t* bytes) const;
 
 	inline size_t size() const { return bytes.size(); }

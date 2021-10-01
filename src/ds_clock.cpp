@@ -7,7 +7,7 @@
 #include <windows.h>
 
 #include "gp_process.h"
-#include "ds_addresses.h"
+#include "ds_memmap.h"
 
 static uint64_t s_freq = 0;
 
@@ -30,9 +30,9 @@ static double get_elapsed(uint64_t from, uint64_t to)
 	return 0;
 }
 
-ds_clock::ds_clock(gp_process& in_process, ds_addresses& in_addresses)
+ds_clock::ds_clock(gp_process& in_process, ds_memmap& in_memmap)
 	: process(in_process)
-	, playtime_addr(in_addresses.playtime)
+	, playtime_addr(in_memmap.stats.playtime)
 	, playtime(0)
 	, frame_count(0)
 	, prev_frame_timestamp(0)

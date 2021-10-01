@@ -1,6 +1,7 @@
 #include "gp_bytepattern.h"
 
 #include <cassert>
+#include <cstring>
 
 #include "gp_process.h"
 
@@ -9,9 +10,9 @@ static constexpr bool is_hex_char(const char c)
 	return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F');
 }
 
-gp_bytepattern::gp_bytepattern(const std::string& s)
+gp_bytepattern::gp_bytepattern(const char* s)
 {
-	const size_t n = s.size();
+	const size_t n = strlen(s);
 	const size_t num_bytes = (n + 1) / 3;
 	if (num_bytes * 3 - 1 == n)
 	{

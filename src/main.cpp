@@ -17,8 +17,7 @@
 #include "gp_window.h"
 #include "gp_process.h"
 
-#include "ds_bases.h"
-#include "ds_addresses.h"
+#include "ds_memmap.h"
 #include "ds_pos.h"
 #include "ds_clock.h"
 #include "ds_player.h"
@@ -71,17 +70,10 @@ int main(int argc, char* argv[])
 	}
 
 	// Peek memory and follow pointers to resolve addresses to relevant values
-	ds_bases bases;
-	if (!bases.resolve(process))
+	ds_memmap memmap;
+	if (!memmap.init(process) || !memmap.resolve(process))
 	{
-		printf("ERROR: Failed to resolve base addresses from landmark byte patterns\n");
-		return 1;
-	}
-
-	ds_addresses addresses;
-	if (!addresses.resolve(process, bases))
-	{
-		printf("ERROR: Failed to resolve addresses\n");
+		printf("ERROR: Failed to initialize memory map for running process\n");
 		return 1;
 	}
 
@@ -107,23 +99,18 @@ int main(int argc, char* argv[])
 		// Warp to the desired bonfire to reset and reload the area
 		const uint32_t bonfire_id = 1510980;
 		printf("Warping to bonfire %u...\n", bonfire_id);
-		ds_inject::warp_to_bonfire(process, bases, addresses, bonfire_id);
+		ds_inject::warp_to_bonfire(process, memmap, bonfire_id);
 		Sleep(5000);
 
 		// Memory will have changed; re-resolve the required addresses
-		if (!bases.resolve(process))
+		if (!memmap.resolve(process))
 		{
-			printf("ERROR: Failed to resolve base addresses from after warp\n");
-			return 1;
-		}
-		if (!addresses.resolve(process, bases))
-		{
-			printf("ERROR: Failed to resolve addresses after warp\n");
+			printf("ERROR: Failed to re-resolve memory map after warp\n");
 			return 1;
 		}
 
 		// Warp the player to the initial position for the script, then wait
-		ds_player player(process, addresses);
+		ds_player player(process, memmap);
 		printf("Warping to start position and waiting %0.2f seconds...\n", script->settle_time);
 		player.set_pos(script->warp_pos);
 		Sleep(static_cast<DWORD>(1000.0f * script->settle_time));
@@ -131,7 +118,7 @@ int main(int argc, char* argv[])
 		// Center the camera, then wait another brief moment
 		printf("Centering camera...\n");
 		vc_state state;
-		process.poke<float>(addresses.camera.target_pitch, 0.0f);
+		process.poke<float>(memmap.camera.target_pitch, 0.0f);
 		state.update_button(si_control::button_rs, true);
 		device.update(state);
 		Sleep(20);
@@ -140,7 +127,7 @@ int main(int argc, char* argv[])
 		Sleep(1000);
 
 		// Start playback of our events
-		ds_clock clock(process, addresses);
+		ds_clock clock(process, memmap);
 		si_evaluator evaluator(timeline);
 		evaluator.start();
 
@@ -165,7 +152,7 @@ int main(int argc, char* argv[])
 				printf("POS Z: %7.3f     \n", pos.z);
 				printf("ANGLE: %7.3f     \n", pos.angle);
 				printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
-				printf("pitch: %7.3f     \n", process.peek<float>(addresses.camera.target_pitch));
+				printf("pitch: %7.3f     \n", process.peek<float>(memmap.camera.target_pitch));
 				printf("\n");
 				printf("T+%5.2f     \n", evaluator.playback_time);
 

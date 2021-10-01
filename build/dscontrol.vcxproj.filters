@@ -24,9 +24,6 @@
     <ClCompile Include="..\src\gp_bytepattern.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ds_addresses.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\ds_player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -60,10 +57,13 @@
     <ClCompile Include="..\src\si_evaluator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ds_bases.cpp">
+    <ClCompile Include="..\src\ds_inject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ds_inject.cpp">
+    <ClCompile Include="..\src\gp_landmark.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ds_memmap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -72,9 +72,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\gp_bytepattern.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\ds_addresses.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\ds_player.h">
@@ -113,10 +110,13 @@
     <ClInclude Include="..\include\si_evaluator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\ds_bases.h">
+    <ClInclude Include="..\include\ds_inject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\ds_inject.h">
+    <ClInclude Include="..\include\gp_landmark.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ds_memmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
