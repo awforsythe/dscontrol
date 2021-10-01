@@ -15,6 +15,7 @@ struct ds_memmap
 	struct
 	{
 		ds_base stats;
+		ds_base postprocess;
 		ds_base camera;
 		ds_base world_chr;
 		uint8_t* chr_class;
@@ -28,6 +29,16 @@ struct ds_memmap
 		uint8_t* playtime;
 	}
 	stats;
+
+	struct
+	{
+		uint8_t* override_flag;
+		uint8_t* override_brightness_rgb;
+		uint8_t* override_contrast_rgb;
+		uint8_t* override_saturation;
+		uint8_t* override_hue;
+	}
+	colorgrade;
 
 	struct
 	{

@@ -126,6 +126,14 @@ int main(int argc, char* argv[])
 		device.update(state);
 		Sleep(1000);
 
+		// Black out the screen for a second before starting
+		printf("Blacking out the screen before starting playback...\n");
+		static const float black[3] = { 0.0f, 0.0f, 0.0f };
+		process.write(memmap.colorgrade.override_brightness_rgb, reinterpret_cast<const uint8_t*>(black), sizeof(black));
+		process.poke<uint32_t>(memmap.colorgrade.override_flag, 1);
+		Sleep(2000);
+		process.poke<uint32_t>(memmap.colorgrade.override_flag, 0);
+
 		// Start playback of our events
 		ds_clock clock(process, memmap);
 		si_evaluator evaluator(timeline);
@@ -223,7 +231,13 @@ int main(int argc, char* argv[])
 		device.update(state);
 
 		printf("Done!\n");
+
+		process.write(memmap.colorgrade.override_brightness_rgb, reinterpret_cast<const uint8_t*>(black), sizeof(black));
+		process.poke<uint32_t>(memmap.colorgrade.override_flag, 1);
 		Sleep(2000);
+		process.poke<uint32_t>(memmap.colorgrade.override_flag, 0);
+
+		Sleep(10);
 	}
 #endif
 }

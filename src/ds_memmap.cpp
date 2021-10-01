@@ -7,6 +7,9 @@
 
 static const gp_landmark s_stats(0x728E50, gp_landmark_type::relative, "48 8B 05 xx xx xx xx 45 33 ED 48 8B F1 48 85 C0");
 
+static const gp_landmark s_postprocess(0x15CE80, gp_landmark_type::relative, "48 8B 05 xx xx xx xx 48 8B 48 08 48 8B 01 48 8B 40 58");
+static const int32_t s_postprocess_to_colorgrade[] = { 0x738 };
+
 static const gp_landmark s_camera(0x24E37B, gp_landmark_type::relative, "48 8B 05 xx xx xx xx 48 89 48 60 E8");
 static const int32_t s_camera_to_camera_target[] = { 0x60, 0x60 };
 
@@ -22,7 +25,7 @@ static const gp_landmark s_bonfire_warp(0x485CE0, gp_landmark_type::absolute, "4
 
 static uint8_t* jump(const gp_process& process, uint8_t* base, const int32_t* offsets, size_t num_offsets)
 {
-	uint8_t* addr = process.peek<uint8_t*>(base);
+	uint8_t* addr = base;
 	for (size_t offset_index = 0; offset_index < num_offsets; offset_index++)
 	{
 		const int32_t offset = offsets[offset_index];
@@ -42,6 +45,13 @@ bool ds_memmap::init(const gp_process& process)
 		return false;
 	}
 
+	// a.k.a. GraphicsData; leads us to post-processing overrides
+	if (!s_postprocess.resolve(process, bases.postprocess.ptr))
+	{
+		printf("ERROR: Failed to resolve base pointer address from postprocess landmark\n");
+		return false;
+	}
+
 	// a.k.a. BaseCAR; leads us to target camera pitch value
 	if (!s_camera.resolve(process, bases.camera.ptr))
 	{
@@ -53,28 +63,28 @@ bool ds_memmap::init(const gp_process& process)
 	// as represented in the world
 	if (!s_world_chr.resolve(process, bases.world_chr.ptr))
 	{
-		printf("ERROR: Failed to resolve base pointer address from WorldChr landmark\n");
+		printf("ERROR: Failed to resolve base pointer address from world_chr landmark\n");
 		return false;
 	}
 
 	// ChrClass; top-level struct that identifies the player
 	if (!s_chr_class.resolve(process, bases.chr_class))
 	{
-		printf("ERROR: Failed to resolve base address from ChrClass landmark\n");
+		printf("ERROR: Failed to resolve base address from chr_class landmark\n");
 		return false;
 	}
 
 	// ChrClassWarp; includes data related to our last warp/reload point (i.e. bonfire)
 	if (!s_chr_class_warp.resolve(process, bases.chr_class_warp.ptr))
 	{
-		printf("ERROR: Failed to resolve base pointer address from ChrClassWarp landmark\n");
+		printf("ERROR: Failed to resolve base pointer address from chr_class_warp landmark\n");
 		return false;
 	}
 
 	// BonfireWarp; records the last bonfire we spawned at
 	if (!s_bonfire_warp.resolve(process, bases.bonfire_warp))
 	{
-		printf("ERROR: Failed to resolve base address from BonfireWarp landmark\n");
+		printf("ERROR: Failed to resolve base address from bonfire_warp landmark\n");
 		return false;
 	}
 
@@ -93,6 +103,13 @@ bool ds_memmap::resolve(const gp_process& process)
 	if (!bases.stats.dereferenced)
 	{
 		printf("ERROR: Failed to resolve stats from base pointer\n");
+		return false;
+	}
+
+	bases.postprocess.dereferenced = process.peek<uint8_t*>(bases.postprocess.ptr);
+	if (!bases.postprocess.dereferenced)
+	{
+		printf("ERROR: Failed to resolve postprocess from base pointer\n");
 		return false;
 	}
 
@@ -119,31 +136,44 @@ bool ds_memmap::resolve(const gp_process& process)
 
 	// Follow chains of pointers to get to the structs that contain relevant game
 	// data - these shift around as memory is reallocated on load etc.
-	// TODO: Update jump code now that we use ds_base
-	uint8_t* camera_target = jump(process, bases.camera.ptr, ds_jumplist(s_camera_to_camera_target));
+	uint8_t* colorgrade_base = jump(process, bases.postprocess.dereferenced, ds_jumplist(s_postprocess_to_colorgrade));
+	if (!colorgrade_base)
+	{
+		printf("ERROR: Failed to resolve colograde_base from postprocess\n");
+		return false;
+	}
+
+	uint8_t* camera_target = jump(process, bases.camera.dereferenced, ds_jumplist(s_camera_to_camera_target));
 	if (!camera_target)
 	{
-		printf("ERROR: Failed to resolve address for camera target\n");
+		printf("ERROR: Failed to resolve camera_target from camera\n");
 		return false;
 	}
 
-	uint8_t* chr_map_data = jump(process, bases.world_chr.ptr, ds_jumplist(s_world_chr_to_chr_map_data));
+	uint8_t* chr_map_data = jump(process, bases.world_chr.dereferenced, ds_jumplist(s_world_chr_to_chr_map_data));
 	if (!chr_map_data)
 	{
-		printf("ERRROR: Failed to resolve ChrMapData address from WorldChr\n");
+		printf("ERRROR: Failed to resolve chr_map_data address from world_chr\n");
 		return false;
 	}
 
-	uint8_t* chr_pos_data = jump(process, bases.world_chr.ptr, ds_jumplist(s_world_chr_to_chr_pos_data));
+	uint8_t* chr_pos_data = jump(process, bases.world_chr.dereferenced, ds_jumplist(s_world_chr_to_chr_pos_data));
 	if (!chr_pos_data)
 	{
-		printf("ERRROR: Failed to resolve ChrPosData address from WorldChr\n");
+		printf("ERRROR: Failed to resolve chr_pos_data address from world_chr\n");
 		return false;
 	}
 
 	// This address is an integer counter that steadily ticks up to represent the
 	// player's total played time: useful for synchronization
 	stats.playtime = bases.stats.dereferenced + 0xA4;
+
+	// Writing to these values will let us override the post-process color grading
+	colorgrade.override_flag = colorgrade_base + 0x34D;
+	colorgrade.override_brightness_rgb = colorgrade_base + 0x350;
+	colorgrade.override_contrast_rgb = colorgrade_base + 0x360;
+	colorgrade.override_saturation = colorgrade_base + 0x35C;
+	colorgrade.override_hue = colorgrade_base + 0x36C;
 
 	// Writing to this address will set the target camera pitch
 	camera.target_pitch = camera_target + 0x150;
