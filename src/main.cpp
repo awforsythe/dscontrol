@@ -23,6 +23,20 @@
 #include "ds_player.h"
 #include "ds_inject.h"
 
+void enable_blackout(gp_process& process, const ds_memmap& memmap)
+{
+	static const float RGB_BLACK[3] = { 0.0f, 0.0f, 0.0f };
+	process.write(memmap.colorgrade.override_brightness_rgb, reinterpret_cast<const uint8_t*>(RGB_BLACK), sizeof(RGB_BLACK));
+	process.poke<uint32_t>(memmap.colorgrade.override_flag, 1);
+}
+
+void disable_blackout(gp_process& process, const ds_memmap& memmap)
+{
+	static const float RGB_WHITE[3] = { 1.0f, 1.0f, 1.0f };
+	process.write(memmap.colorgrade.override_brightness_rgb, reinterpret_cast<const uint8_t*>(RGB_WHITE), sizeof(RGB_WHITE));
+	process.poke<uint32_t>(memmap.colorgrade.override_flag, 0);
+}
+
 int main(int argc, char* argv[])
 {
 	// Load up the .yml scripts that define our scripted interactions
@@ -128,11 +142,9 @@ int main(int argc, char* argv[])
 
 		// Black out the screen for a second before starting
 		printf("Blacking out the screen before starting playback...\n");
-		static const float black[3] = { 0.0f, 0.0f, 0.0f };
-		process.write(memmap.colorgrade.override_brightness_rgb, reinterpret_cast<const uint8_t*>(black), sizeof(black));
-		process.poke<uint32_t>(memmap.colorgrade.override_flag, 1);
+		enable_blackout(process, memmap);
 		Sleep(2000);
-		process.poke<uint32_t>(memmap.colorgrade.override_flag, 0);
+		disable_blackout(process, memmap);
 
 		// Start playback of our events
 		ds_clock clock(process, memmap);
@@ -232,10 +244,9 @@ int main(int argc, char* argv[])
 
 		printf("Done!\n");
 
-		process.write(memmap.colorgrade.override_brightness_rgb, reinterpret_cast<const uint8_t*>(black), sizeof(black));
-		process.poke<uint32_t>(memmap.colorgrade.override_flag, 1);
+		enable_blackout(process, memmap);
 		Sleep(2000);
-		process.poke<uint32_t>(memmap.colorgrade.override_flag, 0);
+		disable_blackout(process, memmap);
 
 		Sleep(10);
 	}
