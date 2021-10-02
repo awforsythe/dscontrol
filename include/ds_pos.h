@@ -26,3 +26,20 @@ struct ds_pos
 	}
 };
 static_assert(sizeof(ds_pos) == sizeof(float) * 4, "unexpected ds_pos size");
+
+inline bool operator<(const ds_pos& lhs, const ds_pos& rhs)
+{
+	if (lhs.x == rhs.x)
+	{
+		if (lhs.y == rhs.y)
+		{
+			if (lhs.z == rhs.z)
+			{
+				return lhs.angle < rhs.angle;
+			}
+			return lhs.z < rhs.z;
+		}
+		return lhs.y < rhs.y;
+	}
+	return lhs.x < rhs.x;
+}

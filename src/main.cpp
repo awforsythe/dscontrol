@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cinttypes>
 #include <cassert>
+#include <set>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -153,16 +154,30 @@ int main(int argc, char* argv[])
 
 		system("cls");
 
+		std::set<ds_pos> pos_values_seen_this_frame;
+		
+		static const size_t MAX_POS_COUNT = 8;
+		int32_t pos_value_counts[MAX_POS_COUNT];
+		memset(pos_value_counts, 0, sizeof(pos_value_counts));
+
 		bool finished = false;
 		while (!finished)
 		{
 			const uint32_t delta = clock.read();
 			if (delta > 0)
 			{
+				const size_t num_pos_values_last_frame = pos_values_seen_this_frame.size();
+				if (num_pos_values_last_frame > 0)
+				{
+					pos_value_counts[min(num_pos_values_last_frame, MAX_POS_COUNT - 1)]++;
+				}
+				pos_values_seen_this_frame.clear();
+
 				finished = evaluator.tick();
 				device.update(evaluator.control_state);
 
 				const ds_pos pos = player.get_pos();
+				pos_values_seen_this_frame.insert(pos);
 
 				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
 				printf("FRAME: %u        \n", clock.frame_count);
@@ -174,6 +189,15 @@ int main(int argc, char* argv[])
 				printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
 				printf("pitch: %7.3f     \n", process.peek<float>(memmap.camera.target_pitch));
 				printf("\n");
+
+				printf("DISCRETE POSITION VALUES COUNTED PER FRAME:\n");
+				for (size_t pos_count = 1; pos_count < MAX_POS_COUNT; pos_count++)
+				{
+					const char* suffix = pos_count == MAX_POS_COUNT - 1 ? "+" : " ";
+					printf(" %zu%s: %d\n", pos_count, suffix, pos_value_counts[pos_count]);
+				}
+				printf("\n");
+
 				printf("T+%5.2f     \n", evaluator.playback_time);
 
 				const int32_t num_events = static_cast<int32_t>(script->events.size());
@@ -189,53 +213,11 @@ int main(int argc, char* argv[])
 						break;
 					}
 				}
-
-				const int32_t num_events_to_display = 16;
-				int32_t start_index = max(0, completed_event_index - num_events_to_display / 2);
-				int32_t stop_index = min(num_events - 1, start_index + num_events_to_display);
-				if (stop_index - start_index < num_events_to_display)
-				{
-					start_index = stop_index - num_events_to_display;
-				}
-
-				for (int32_t i = start_index; i <= stop_index; i++)
-				{
-					const si_event& event = script->events[i];
-					const bool has_completed_event = i <= completed_event_index;
-					const bool event_is_recent = i == completed_event_index && evaluator.playback_time - event.time < 0.2f;
-					const char* bullet = event_is_recent ? "=>" : (has_completed_event ? "=>" : "- ");
-					const char* control_name = si_control_names[static_cast<uint8_t>(event.control)];
-
-					printf("%s at %5.2f: %s", bullet, event.time, control_name);
-					for (size_t pad = 12 - strlen(control_name); pad > 0; pad--)
-					{
-						putc(' ', stdout);
-					}
-
-					if (si_control_is_stick(event.control))
-					{
-						printf("% 4d deg, % 3d%% ", static_cast<int32_t>(round(event.stick.angle * 57.2957795f)), static_cast<int32_t>(event.stick.distance * 100.0f));
-						if (event.duration > 0.0f)
-						{
-							printf("over %0.2fs         \n", event.duration);
-						}
-						else
-						{
-							printf("instant          \n");
-						}
-					}
-					else
-					{
-						if (event.duration > si_event::SINGLE_FRAME_DURATION)
-						{
-							printf("   (hold %0.2fs)       \n", event.duration);
-						}
-						else
-						{
-							printf("                        \n");
-						}
-					}
-				}
+			}
+			else
+			{
+				const ds_pos pos = player.get_pos();
+				pos_values_seen_this_frame.insert(pos);
 			}
 		}
 
