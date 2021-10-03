@@ -133,121 +133,42 @@ int main(int argc, char* argv[])
 	}
 	window.move_to(1920, 0);
 	window.activate();
+	Sleep(1000);
 
 	// Peek memory and follow pointers to resolve addresses to relevant values
 	ds_memmap memmap;
-	if (!memmap.init(process) || !memmap.resolve(process))
+	if (!memmap.init(process))
 	{
 		printf("ERROR: Failed to initialize memory map for running process\n");
 		return 1;
 	}
 
-#if 1
-	// Warp to a known starting point
-	ds_player player(process, memmap);
-	player.set_pos(ds_pos(266.0f, 120.0f, 255.0f, -1.5708f));
-	Sleep(1000);
+	// Initialize a ds_clock: this only uses fixed memory, so it's good for the
+	// lifetime of the game process. Polling the clock will tell us when we're
+	// in-game, i.e. actually loaded in with a character, vs. when we're at a
+	// loading screen or in the main menu.
+	ds_clock clock(process, memmap.playtime_addr);
 
-	// Center the camera behind the player
-	vc_state state;
-	process.poke<float>(memmap.camera.target_pitch, 0.0f);
-	state.update_button(si_control::button_rs, true);
-	device.update(state);
-	Sleep(20);
-	state.update_button(si_control::button_rs, false);
-	device.update(state);
-	Sleep(1000);
-
-	// Start moving the player straight forward
-	state.update_stick(si_control::left_stick, 1.5708f, 1.0f);
-	device.update(state);
-	Sleep(500);
-
-	// Scratch: record frames of data as we move forward
-	struct _frame
+	// We can't procedurally start the game, so if we're at the title screen just
+	// block indefinitely until the user loads a character
+	printf("Waiting to load into the game...\n");
+	uint32_t num_clock_changes = 0;
+	while (num_clock_changes < 100)
 	{
-		uint32_t num;
-		double delta_ms;
-		std::vector<float> x_vals;
-
-		_frame()
-			: num(0)
-			, delta_ms(0)
+		if (clock.read())
 		{
-			x_vals.reserve(8192);
+			num_clock_changes++;
 		}
-	};
-	static const size_t max_frames = 128;
-	std::vector<_frame> frames;
-	frames.reserve(max_frames);
-
-	// Continually read player position (thousands of times per in-game frame) until we've buffered enough data
-	ds_clock clock(process, memmap);
-	_frame frame;
-	while (frames.size() < max_frames)
-	{
-		const uint32_t delta = clock.read();
-		const ds_pos pos = player.get_pos();
-
-		// If our in-game playtime has been incremented, dump our current frame and start a new one
-		if (delta > 0)
-		{
-			if (frame.num != 0)
-			{
-				frames.push_back(frame);
-			}
-			frame.num = clock.frame_count;
-			frame.delta_ms = clock.real_frame_time * 1000.0;
-			frame.x_vals.clear();
-		}
-
-		// Add our latest x position value to the current frame
-		frame.x_vals.push_back(pos.x);
-		Sleep(0);
-
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
-		printf("FRAME: %u        \n", clock.frame_count);
-		printf("   dt: %7.3f ms  \n", clock.real_frame_time * 1000.0);
-		printf("POS X: %7.3f     \n", pos.x);
-		printf("POS Y: %7.3f     \n", pos.y);
-		printf("POS Z: %7.3f     \n", pos.z);
-		printf("ANGLE: %7.3f     \n", pos.angle);
-		printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
 	}
 
-	// Stop moving the player
-	state.reset();
-	device.update(state);
-
-	// Dump our recorded data to a CSV file so we can analyze it
-	FILE* fp = fopen("..\\dump.csv", "w");
-	fprintf(fp, "time,frame,x\n");
-	double frame_start_time = 0.0;
-	double prev_x_val_read_time = -1.0;
-	for (size_t frame_index = 0; frame_index < frames.size(); frame_index++)
+	// Once we have a player character loaded, we need to resolve the full set of
+	// addresses required to control the game
+	if (!memmap.resolve(process))
 	{
-		const _frame& frame = frames[frame_index];
-		const size_t num_x_vals = frame.x_vals.size();
-		if (num_x_vals > 0 && frame.delta_ms > 0.0)
-		{
-			// Iterate over each value in the frame, estimating when (in real time) that read occurred
-			for (size_t x_val_index = 0; x_val_index < num_x_vals; x_val_index++)
-			{
-				const double progress_within_frame = static_cast<double>(x_val_index) / static_cast<double>(num_x_vals);
-				const double elapsed_within_frame = progress_within_frame / frame.delta_ms;
-				const double x_val_read_time = frame_start_time + elapsed_within_frame;
-
-				fprintf(fp, "%f,%u,%f\n", x_val_read_time, frame.num, frame.x_vals[x_val_index]);
-
-				// Sanity check: ensure that our recorded times are contiguously increasing
-				assert(x_val_read_time > prev_x_val_read_time);
-				prev_x_val_read_time = x_val_read_time;
-			}
-		}
-		frame_start_time += frame.delta_ms;
+		printf("ERROR: Failed to resolve memory upon initial load\n");
+		return false;
 	}
-	fclose(fp);
-#else
+
 	while (true)
 	{
 		// Warp to the desired bonfire to reset and reload the area
@@ -287,7 +208,7 @@ int main(int argc, char* argv[])
 		disable_blackout(process, memmap);
 
 		// Start playback of our events
-		ds_clock clock(process, memmap);
+		clock.frame_count = 0;
 		si_evaluator evaluator(timeline);
 		evaluator.start();
 
@@ -371,5 +292,4 @@ int main(int argc, char* argv[])
 
 		Sleep(10);
 	}
-#endif
 }

@@ -12,9 +12,10 @@ struct ds_base
 
 struct ds_memmap
 {
+	uint8_t* playtime_addr;
+
 	struct
 	{
-		ds_base stats;
 		ds_base postprocess;
 		ds_base camera;
 		ds_base world_chr;

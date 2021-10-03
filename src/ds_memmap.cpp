@@ -39,11 +39,25 @@ bool ds_memmap::init(const gp_process& process)
 	memset(this, 0, sizeof(this));
 
 	// a.k.a. BaseB; leads us to elapsed play time counter
-	if (!s_stats.resolve(process, bases.stats.ptr))
+	uint8_t* stats_ptr;
+	if (!s_stats.resolve(process, stats_ptr))
 	{
 		printf("ERROR: Failed to resolve base pointer address from stats landmark\n");
 		return false;
 	}
+	uint8_t* stats_dereferenced = process.peek<uint8_t*>(stats_ptr);
+	if (!stats_dereferenced)
+	{
+		printf("ERROR: Failed to resolve stats from base pointer\n");
+		return false;
+	}
+
+	// At this address is an integer counter that steadily ticks up to represent
+	// the player's total played time: useful for synchronization. This address is
+	// static, so it gives us some overall continuity between reloads. It's 0 when
+	// on the main menu; when in-game it'll steadily increment, and when reloading
+	// an area it'll stop incrementing.
+	playtime_addr = stats_dereferenced + 0xA4;
 
 	// a.k.a. GraphicsData; leads us to post-processing overrides
 	if (!s_postprocess.resolve(process, bases.postprocess.ptr))
@@ -99,13 +113,6 @@ bool ds_memmap::resolve(const gp_process& process)
 	// between the 'ptr' value and the 'dereferenced' address that it points to:
 	// the ptr address is fixed; but its value has to be dereferenced (by
 	// following the pointer) every time we reload and re-resolve memory.
-	bases.stats.dereferenced = process.peek<uint8_t*>(bases.stats.ptr);
-	if (!bases.stats.dereferenced)
-	{
-		printf("ERROR: Failed to resolve stats from base pointer\n");
-		return false;
-	}
-
 	bases.postprocess.dereferenced = process.peek<uint8_t*>(bases.postprocess.ptr);
 	if (!bases.postprocess.dereferenced)
 	{
@@ -163,10 +170,6 @@ bool ds_memmap::resolve(const gp_process& process)
 		printf("ERRROR: Failed to resolve chr_pos_data address from world_chr\n");
 		return false;
 	}
-
-	// This address is an integer counter that steadily ticks up to represent the
-	// player's total played time: useful for synchronization
-	stats.playtime = bases.stats.dereferenced + 0xA4;
 
 	// Writing to these values will let us override the post-process color grading
 	colorgrade.override_flag = colorgrade_base + 0x34D;

@@ -30,9 +30,9 @@ static double get_elapsed(uint64_t from, uint64_t to)
 	return 0;
 }
 
-ds_clock::ds_clock(gp_process& in_process, ds_memmap& in_memmap)
+ds_clock::ds_clock(gp_process& in_process, const uint8_t* in_playtime_addr)
 	: process(in_process)
-	, playtime_addr(in_memmap.stats.playtime)
+	, playtime_addr(in_playtime_addr)
 	, playtime(0)
 	, frame_count(0)
 	, prev_frame_timestamp(0)
