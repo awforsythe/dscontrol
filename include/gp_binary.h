@@ -8,13 +8,17 @@
 
 struct gp_binary
 {
-	std::wstring exe_name;
+	std::wstring exe_path;
 	std::wstring window_class_name;
+	uint32_t steam_app_id;
+
+	std::wstring working_dir;
+	std::wstring exe_name;
 
 	gp_window window;
 	gp_process process;
 
-	gp_binary(const wchar_t* in_exe_name, const wchar_t* in_window_class_name);
+	gp_binary(const wchar_t* in_exe_path, const wchar_t* in_window_class_name, uint32_t in_steam_app_id);
 	bool find();
-	bool launch(const wchar_t* working_dir, const uint32_t steam_app_id);
+	bool launch();
 };

@@ -23,7 +23,7 @@ static void* alloc_child_process_env(uint32_t steam_app_id)
 	wchar_t keyval_buf[64];
 	static const size_t keyval_buf_capacity = sizeof(keyval_buf) / sizeof(keyval_buf[0]);
 	assert(key_to_add_len + 1 + max_uint32_str_len + 1 <= keyval_buf_capacity);
-	const size_t keyval_buf_size = wsprintf(keyval_buf, L"%ls=%u", key_to_add, steam_app_id) + 1;
+	const size_t keyval_buf_size = static_cast<size_t>(wsprintf(keyval_buf, L"%ls=%u", key_to_add, steam_app_id)) + 1;
 
 	// Get our own process's environment block (as an array of null-terminated strings with a null at the end)
 	wchar_t* own_env_block = GetEnvironmentStringsW();
@@ -112,12 +112,28 @@ static void* alloc_child_process_env(uint32_t steam_app_id)
 	return new_env_block;
 }
 
-gp_binary::gp_binary(const wchar_t* in_exe_name, const wchar_t* in_window_class_name)
-	: exe_name(in_exe_name)
+gp_binary::gp_binary(const wchar_t* in_exe_path, const wchar_t* in_window_class_name, uint32_t in_steam_app_id)
+	: exe_path(in_exe_path)
 	, window_class_name(in_window_class_name)
+	, steam_app_id(in_steam_app_id)
 {
-	assert(in_exe_name && in_exe_name[0]);
+	assert(in_exe_path && in_exe_path[0]);
 	assert(in_window_class_name && in_window_class_name[0]);
+
+	const wchar_t* delim = wcsrchr(in_exe_path, L'\\');
+	if (delim)
+	{
+		const size_t delim_offset = delim - in_exe_path;
+		exe_name = std::wstring(delim + 1);
+		working_dir = std::wstring(in_exe_path, delim_offset);
+	}
+	else
+	{
+		exe_name = exe_path;
+		working_dir = std::wstring(L".");
+	}
+
+	
 }
 
 bool gp_binary::find()
@@ -131,22 +147,16 @@ bool gp_binary::find()
 	return false;
 }
 
-bool gp_binary::launch(const wchar_t* working_dir, const uint32_t steam_app_id)
+bool gp_binary::launch()
 {
-	assert(working_dir && working_dir[0]);
-
-	// Build the string to our executable, which we expect to find in the working directory for the process
+	// CreateProcess needs a mutable string, so copy our exe path into a local buffer
 	wchar_t args[MAX_PATH];
-	const size_t working_dir_len = wcslen(working_dir);
-	const size_t args_len = working_dir_len + 1 + exe_name.size();
-	if (args_len + 1 >= MAX_PATH)
+	if (exe_path.size() + 1 > sizeof(args) / sizeof(args[0]))
 	{
-		printf("ERROR: Joining '%ls' and '%ls' would exceed MAX_PATH chars\n", working_dir, exe_name.c_str());
+		printf("ERROR: Executable path is too long\n");
 		return false;
 	}
-	wcscpy(args, working_dir);
-	args[working_dir_len] = '\\';
-	wcscpy(args + working_dir_len + 1, exe_name.c_str());
+	wcscpy(args, exe_path.c_str());
 
 	// If we need to set environment variables, copy our own environment and extend it
 	void* env_block = nullptr;
@@ -169,9 +179,9 @@ bool gp_binary::launch(const wchar_t* working_dir, const uint32_t steam_app_id)
 	ZeroMemory(&process_info, sizeof(process_info));
 
 	// Start up the process
-	if (!CreateProcessW(nullptr, args, nullptr, nullptr, FALSE, CREATE_UNICODE_ENVIRONMENT, env_block, working_dir, &startup_info, &process_info))
+	if (!CreateProcessW(nullptr, args, nullptr, nullptr, FALSE, CREATE_UNICODE_ENVIRONMENT, env_block, working_dir.c_str(), &startup_info, &process_info))
 	{
-		printf("ERROR: CreateProcess failed with error 0x%X for %ls\n", GetLastError(), args);
+		printf("ERROR: CreateProcess failed with error 0x%X for %ls\n", GetLastError(), exe_path.c_str());
 		if (env_block)
 		{
 			delete[] env_block;

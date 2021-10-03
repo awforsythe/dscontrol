@@ -70,14 +70,14 @@ int main(int argc, char* argv[])
 	}
 
 	// Find a DS1R window if already running; otherwise try to launch the game
-	const wchar_t* DS1R_WINDOW_CLASS = L"DARK SOULS";
 	const wchar_t* DS1R_EXE_NAME = L"DarkSoulsRemastered.exe";
-	const wchar_t* DS1R_WORKING_DIR = L"Q:\\SteamLibrary\\steamapps\\common\\DARK SOULS REMASTERED";
+	const wchar_t* DS1R_EXE_PATH = L"Q:\\SteamLibrary\\steamapps\\common\\DARK SOULS REMASTERED\\DarkSoulsRemastered.exe";
+	const wchar_t* DS1R_WINDOW_CLASS = L"DARK SOULS";
 	const uint32_t DS1R_STEAM_APP_ID = 570940;
-	gp_binary binary(DS1R_EXE_NAME, DS1R_WINDOW_CLASS);
+	gp_binary binary(DS1R_EXE_PATH, DS1R_WINDOW_CLASS, DS1R_STEAM_APP_ID);
 	if (!binary.find())
 	{
-		if (!binary.launch(DS1R_WORKING_DIR, DS1R_STEAM_APP_ID))
+		if (!binary.launch())
 		{
 			printf("ERROR: Failed to launch %ls (no existing process found)\n", DS1R_EXE_NAME);
 			return 1;
