@@ -31,8 +31,7 @@ static void* get_base_address(const wchar_t* module_name, DWORD pid)
 }
 
 gp_process::gp_process()
-	: pid(0)
-	, handle(nullptr)
+	: handle(nullptr)
 	, module_addr(nullptr)
 {
 }
@@ -45,12 +44,10 @@ gp_process::~gp_process()
 	}
 }
 
-bool gp_process::open(void* window_handle, const wchar_t* module_name)
+bool gp_process::open(uint32_t pid, const wchar_t* module_name)
 {
-	assert(window_handle);
-	assert(module_name);
+	assert(module_name && module_name[0]);
 
-	GetWindowThreadProcessId((HWND)window_handle, (LPDWORD)&pid);
 	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 	if (!handle)
 	{
