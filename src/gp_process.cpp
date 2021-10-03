@@ -31,7 +31,8 @@ static void* get_base_address(const wchar_t* module_name, DWORD pid)
 }
 
 gp_process::gp_process()
-	: handle(nullptr)
+	: pid(0)
+	, handle(nullptr)
 	, module_addr(nullptr)
 {
 }

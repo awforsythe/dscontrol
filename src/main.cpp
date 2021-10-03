@@ -102,6 +102,8 @@ int main(int argc, char* argv[])
 		printf("\n");
 		return false;
 	}
+	window.move_to(1920, 0);
+	window.activate();
 
 	// Peek memory and follow pointers to resolve addresses to relevant values
 	ds_memmap memmap;
@@ -110,11 +112,6 @@ int main(int argc, char* argv[])
 		printf("ERROR: Failed to initialize memory map for running process\n");
 		return 1;
 	}
-
-	// Move the window and give focus to the game
-	system("cls");
-	window.move_to(1920, 0);
-	window.activate();
 
 #if 0
 	const ds_pos pos = player.get_pos();
