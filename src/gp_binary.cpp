@@ -4,6 +4,30 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <TlHelp32.h>
+
+static uint32_t find_process_by_name(const wchar_t* exe_name)
+{
+	uint32_t pid = 0;
+	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	PROCESSENTRY32 entry = { 0 };
+	entry.dwSize = sizeof(PROCESSENTRY32);
+
+	if (Process32First(snapshot, &entry))
+	{
+		do
+		{
+			if (wcscmp(entry.szExeFile, exe_name) == 0)
+			{
+				pid = entry.th32ProcessID;
+				break;
+			}
+
+		} while (Process32Next(snapshot, &entry));
+	}
+	CloseHandle(snapshot);
+	return pid;
+}
 
 static bool is_alpha(wchar_t c)
 {
@@ -136,18 +160,17 @@ gp_binary::gp_binary(const wchar_t* in_exe_path, const wchar_t* in_window_class_
 	
 }
 
-bool gp_binary::find()
+bool gp_binary::find_process(gp_process& process)
 {
-	if (window.find(window_class_name.c_str()))
+	const uint32_t existing_pid = find_process_by_name(exe_name.c_str());
+	if (existing_pid != 0)
 	{
-		DWORD pid = 0;
-		GetWindowThreadProcessId(reinterpret_cast<HWND>(window.handle), &pid);
-		return process.open(pid, exe_name.c_str());
+		return process.open(existing_pid, exe_name.c_str());
 	}
 	return false;
 }
 
-bool gp_binary::launch()
+bool gp_binary::launch_process(gp_process& process)
 {
 	// CreateProcess needs a mutable string, so copy our exe path into a local buffer
 	wchar_t args[MAX_PATH];
@@ -178,53 +201,34 @@ bool gp_binary::launch()
 	PROCESS_INFORMATION process_info;
 	ZeroMemory(&process_info, sizeof(process_info));
 
-	// Start up the process
-	if (!CreateProcessW(nullptr, args, nullptr, nullptr, FALSE, CREATE_UNICODE_ENVIRONMENT, env_block, working_dir.c_str(), &startup_info, &process_info))
+	// Attempt to start the process, and if we allocated an env block for the child process, free it
+	const BOOL created_process = CreateProcessW(nullptr, args, nullptr, nullptr, FALSE, CREATE_UNICODE_ENVIRONMENT, env_block, working_dir.c_str(), &startup_info, &process_info);
+	delete[] env_block;
+	if (!created_process)
 	{
 		printf("ERROR: CreateProcess failed with error 0x%X for %ls\n", GetLastError(), exe_path.c_str());
-		if (env_block)
-		{
-			delete[] env_block;
-		}
 		return false;
 	}
 
-	// If we allocated a custom env block for the child process, free it
-	if (env_block)
-	{
-		delete[] env_block;
-	}
-
-	// Wait a moment to verify that the process doesn't immediately exit, and to give the window time to appear
-	const DWORD ret_val = WaitForSingleObject(process_info.hProcess, 5000);
+	// Wait a moment to verify that the process doesn't immediately exit
+	bool ok = true;
+	const DWORD ret_val = WaitForSingleObject(process_info.hProcess, 100);
 	if (ret_val != WAIT_TIMEOUT)
 	{
 		printf("ERROR: %ls exited with code %d after launch\n", exe_name.c_str(), ret_val);
-		CloseHandle(process_info.hProcess);
-		CloseHandle(process_info.hThread);
-		return false;
+		ok = false;
 	}
 
 	// If the process started up OK, initialize a gp_process and find our EXE module
-	if (!process.open(process_info.dwProcessId, exe_name.c_str()))
+	if (ok && !process.open(process_info.dwProcessId, exe_name.c_str()))
 	{
 		printf("ERROR: Failed to open process %ls after launch\n", exe_name.c_str());
 		TerminateProcess(process_info.hProcess, 1);
-		CloseHandle(process_info.hProcess);
-		CloseHandle(process_info.hThread);
-		return false;
+		ok = false;
 	}
 
-	// If the gp_process is OK, find the main window belonging to that process
-	// TODO: Restrict based on PID
-	if (!window.find(window_class_name.c_str()))
-	{
-		printf("ERROR: Failed to find '%ls' window after launching %ls\n", window_class_name.c_str(), exe_name.c_str());
-		TerminateProcess(process_info.hProcess, 1);
-		CloseHandle(process_info.hProcess);
-		CloseHandle(process_info.hThread);
-		return false;
-	}
-
-	return true;
+	// We're done with our process and thread handles: don't prevent the process from being cleaned up
+	CloseHandle(process_info.hProcess);
+	CloseHandle(process_info.hThread);
+	return ok;
 }

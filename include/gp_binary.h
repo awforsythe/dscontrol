@@ -15,10 +15,7 @@ struct gp_binary
 	std::wstring working_dir;
 	std::wstring exe_name;
 
-	gp_window window;
-	gp_process process;
-
 	gp_binary(const wchar_t* in_exe_path, const wchar_t* in_window_class_name, uint32_t in_steam_app_id);
-	bool find();
-	bool launch();
+	bool find_process(gp_process& process);
+	bool launch_process(gp_process& process);
 };

@@ -3,7 +3,7 @@
 #include <cassert>
 #include <vector>
 
-#include "gp_process.h""
+#include "gp_process.h"
 
 gp_landmark::gp_landmark(uint32_t in_offset, gp_landmark_type in_type, const char* s)
 	: offset(in_offset)

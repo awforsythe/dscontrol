@@ -69,22 +69,39 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	// Find a DS1R window if already running; otherwise try to launch the game
+	// Establish the binary that we're trying to manipulate: DS1R in this case
 	const wchar_t* DS1R_EXE_NAME = L"DarkSoulsRemastered.exe";
 	const wchar_t* DS1R_EXE_PATH = L"Q:\\SteamLibrary\\steamapps\\common\\DARK SOULS REMASTERED\\DarkSoulsRemastered.exe";
 	const wchar_t* DS1R_WINDOW_CLASS = L"DARK SOULS";
 	const uint32_t DS1R_STEAM_APP_ID = 570940;
 	gp_binary binary(DS1R_EXE_PATH, DS1R_WINDOW_CLASS, DS1R_STEAM_APP_ID);
-	if (!binary.find())
+
+	// Find a DS1R window if already running; otherwise try to launch the game
+	gp_process process;
+	bool launched_process = false;
+	if (!binary.find_process(process))
 	{
-		if (!binary.launch())
+		if (!binary.launch_process(process))
 		{
 			printf("ERROR: Failed to launch %ls (no existing process found)\n", DS1R_EXE_NAME);
 			return 1;
 		}
+		launched_process = true;
 	}
-	gp_window& window = binary.window;
-	gp_process& process = binary.process;
+
+	// Get a handle to the game's main window: if we just launched the process, block for a few seconds and wait
+	gp_window window;
+	const uint32_t await_window_timeout = 1000 * (launched_process ? 10 : 0);
+	if (!window.await(process.pid, DS1R_WINDOW_CLASS, await_window_timeout))
+	{
+		printf("ERROR: Failed to find window of class '%ls' associated with pid %u", DS1R_WINDOW_CLASS, process.pid);
+		if (await_window_timeout > 0)
+		{
+			printf(" (waited %0.2f seconds)", static_cast<float>(await_window_timeout) / 1000.0f);
+		}
+		printf("\n");
+		return false;
+	}
 
 	// Peek memory and follow pointers to resolve addresses to relevant values
 	ds_memmap memmap;

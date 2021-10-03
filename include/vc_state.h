@@ -15,7 +15,6 @@ struct vc_state
 
 	vc_state();
 	void reset();
-	void set_left_stick(float x, float y);
 
 	void update_stick(si_control control, float angle, float distance);
 	void update_button(si_control control, bool is_down);

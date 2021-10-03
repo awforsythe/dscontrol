@@ -44,24 +44,25 @@ gp_process::~gp_process()
 	}
 }
 
-bool gp_process::open(uint32_t pid, const wchar_t* module_name)
+bool gp_process::open(uint32_t in_pid, const wchar_t* module_name)
 {
 	assert(module_name && module_name[0]);
 
-	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, in_pid);
 	if (!handle)
 	{
 		printf("ERROR: Failed to open process\n");
 		return false;
 	}
 
-	module_addr = reinterpret_cast<uint8_t*>(get_base_address(module_name, pid));
+	module_addr = reinterpret_cast<uint8_t*>(get_base_address(module_name, in_pid));
 	if (!module_addr)
 	{
 		printf("ERROR: Failed to get module base address\n");
 		return false;
 	}
 
+	pid = in_pid;
 	return true;
 }
 

@@ -4,13 +4,14 @@
 
 struct gp_process
 {
+	uint32_t pid;
 	void* handle;
 	uint8_t* module_addr;
 
 	gp_process();
 	~gp_process();
 
-	bool open(uint32_t pid, const wchar_t* module_name);
+	bool open(uint32_t in_pid, const wchar_t* module_name);
 	bool read(const uint8_t* addr, uint8_t* buf, size_t size) const;
 	bool write(uint8_t* addr, const uint8_t* buf, size_t size);
 	bool inject_and_run(const uint8_t* buf, size_t size);
