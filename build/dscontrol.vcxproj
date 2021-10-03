@@ -95,6 +95,7 @@
     <ClCompile Include="..\src\gp_bytepattern.cpp" />
     <ClCompile Include="..\src\ds_player.cpp" />
     <ClCompile Include="..\src\gp_landmark.cpp" />
+    <ClCompile Include="..\src\gp_binary.cpp" />
     <ClCompile Include="..\src\gp_process.cpp" />
     <ClCompile Include="..\src\gp_window.cpp" />
     <ClCompile Include="..\src\si_control.cpp" />
@@ -114,6 +115,7 @@
     <ClInclude Include="..\include\ds_player.h" />
     <ClInclude Include="..\include\ds_pos.h" />
     <ClInclude Include="..\include\gp_landmark.h" />
+    <ClInclude Include="..\include\gp_binary.h" />
     <ClInclude Include="..\include\gp_process.h" />
     <ClInclude Include="..\include\gp_window.h" />
     <ClInclude Include="..\include\si_control.h" />

@@ -17,6 +17,7 @@
 
 #include "gp_window.h"
 #include "gp_process.h"
+#include "gp_binary.h"
 
 #include "ds_memmap.h"
 #include "ds_pos.h"
@@ -68,21 +69,22 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	// Find the DS1R window: it should already be running
-	gp_window window;
-	if (!window.find(L"DARK SOULS"))
+	// Find a DS1R window if already running; otherwise try to launch the game
+	const wchar_t* DS1R_WINDOW_CLASS = L"DARK SOULS";
+	const wchar_t* DS1R_EXE_NAME = L"DarkSoulsRemastered.exe";
+	const wchar_t* DS1R_WORKING_DIR = L"Q:\\SteamLibrary\\steamapps\\common\\DARK SOULS REMASTERED";
+	const uint32_t DS1R_STEAM_APP_ID = 570940;
+	gp_binary binary(DS1R_EXE_NAME, DS1R_WINDOW_CLASS);
+	if (!binary.find())
 	{
-		printf("ERROR: Failed to find window (is DarkSoulsRemastered.exe running?)\n");
-		return 1;
+		if (!binary.launch(DS1R_WORKING_DIR, DS1R_STEAM_APP_ID))
+		{
+			printf("ERROR: Failed to launch %ls (no existing process found)\n", DS1R_EXE_NAME);
+			return 1;
+		}
 	}
-
-	// Open a process handle so we can read and write memory
-	gp_process process;
-	if (!process.open(window.handle, L"DarkSoulsRemastered.exe"))
-	{
-		printf("ERROR: Failed to initialize process (is DarkSoulsRemastered.exe running?)\n");
-		return 1;
-	}
+	gp_window& window = binary.window;
+	gp_process& process = binary.process;
 
 	// Peek memory and follow pointers to resolve addresses to relevant values
 	ds_memmap memmap;
