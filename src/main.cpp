@@ -21,38 +21,9 @@
 
 #include "ds_memmap.h"
 #include "ds_pos.h"
-#include "ds_clock.h"
+#include "ds_monitor.h"
 #include "ds_player.h"
 #include "ds_inject.h"
-
-enum class dsc_mode : uint8_t
-{
-	standalone,
-	network,
-};
-
-enum class dsc_title : uint8_t
-{
-	none,
-	ds1r,
-	ds2s,
-	ds3,
-};
-
-enum class dsc_agent_state : uint8_t
-{
-	ingame_idle,
-	ingame_pre_playback,
-	ingame_playback,
-	ingame_post_playback,
-};
-
-struct dsc_agent
-{
-	dsc_mode mode;
-	dsc_title title;
-	dsc_agent_state state;
-};
 
 void enable_blackout(gp_process& process, const ds_memmap& memmap)
 {
@@ -66,6 +37,16 @@ void disable_blackout(gp_process& process, const ds_memmap& memmap)
 	static const float RGB_WHITE[3] = { 1.0f, 1.0f, 1.0f };
 	process.write(memmap.colorgrade.override_brightness_rgb, reinterpret_cast<const uint8_t*>(RGB_WHITE), sizeof(RGB_WHITE));
 	process.poke<uint32_t>(memmap.colorgrade.override_flag, 0);
+}
+
+void on_state_change(ds_monitor_state old_state, ds_monitor_state new_state)
+{
+	printf("\nSTATE CHANGE %d -> %d\n", static_cast<int>(old_state), static_cast<int>(new_state));
+}
+
+void on_update(uint32_t frame_index, double real_delta_time)
+{
+	printf(".");
 }
 
 int main(int argc, char* argv[])
@@ -143,24 +124,13 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	// Initialize a ds_clock: this only uses fixed memory, so it's good for the
-	// lifetime of the game process. Polling the clock will tell us when we're
-	// in-game, i.e. actually loaded in with a character, vs. when we're at a
-	// loading screen or in the main menu.
-	ds_clock clock(process, memmap.playtime_addr);
-
-	// We can't procedurally start the game, so if we're at the title screen just
-	// block indefinitely until the user loads a character
-	printf("Waiting to load into the game...\n");
-	uint32_t num_clock_changes = 0;
-	while (num_clock_changes < 100)
+	ds_monitor monitor(process, memmap.playtime_addr, &on_state_change, &on_update);
+	while (true)
 	{
-		if (clock.read())
-		{
-			num_clock_changes++;
-		}
+		monitor.poll();
 	}
 
+#if 0
 	// Once we have a player character loaded, we need to resolve the full set of
 	// addresses required to control the game
 	if (!memmap.resolve(process))
@@ -292,4 +262,5 @@ int main(int argc, char* argv[])
 
 		Sleep(10);
 	}
+#endif
 }

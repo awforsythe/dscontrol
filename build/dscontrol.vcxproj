@@ -89,9 +89,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="../src/main.cpp" />
-    <ClCompile Include="..\src\ds_clock.cpp" />
     <ClCompile Include="..\src\ds_inject.cpp" />
     <ClCompile Include="..\src\ds_memmap.cpp" />
+    <ClCompile Include="..\src\ds_monitor.cpp" />
     <ClCompile Include="..\src\gp_bytepattern.cpp" />
     <ClCompile Include="..\src\ds_player.cpp" />
     <ClCompile Include="..\src\gp_landmark.cpp" />
@@ -108,9 +108,9 @@
     <ClCompile Include="..\src\vc_state.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\ds_clock.h" />
     <ClInclude Include="..\include\ds_inject.h" />
     <ClInclude Include="..\include\ds_memmap.h" />
+    <ClInclude Include="..\include\ds_monitor.h" />
     <ClInclude Include="..\include\gp_bytepattern.h" />
     <ClInclude Include="..\include\ds_player.h" />
     <ClInclude Include="..\include\ds_pos.h" />
