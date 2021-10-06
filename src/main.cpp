@@ -117,16 +117,171 @@ static bool init()
 	return true;
 }
 
+/** Local program state related to the playback of a single sequence */
+enum class _program_state : uint8_t
+{
+	idle,
+	pre_playback,
+	playback,
+	post_playback,
+};
+static _program_state s_program_state = _program_state::idle;
+
+static bool s_has_executed_bonfire_warp = false;
+static bool s_has_finished_bonfire_warp = false;
+static bool s_has_warped_to_start_pos = false;
+static double s_settle_time_elapsed = 0.0;
+static bool s_has_settled = false;
+static uint32_t s_num_frames_since_settle = 0;
+static bool s_has_centered_camera = false;
+
+static uint32_t s_playback_start_frame_index = 0;
+static double s_playback_elapsed = 0.0;
+static double s_post_playback_elapsed = 0.0;
+
+static void reset_local_state()
+{
+	s_has_executed_bonfire_warp = false;
+	s_has_finished_bonfire_warp = false;
+	s_has_warped_to_start_pos = false;
+	s_settle_time_elapsed = 0.0;
+	s_has_settled = false;
+	s_num_frames_since_settle = 0;
+	s_has_centered_camera = false;
+
+	s_playback_start_frame_index = 0;
+	s_playback_elapsed = 0.0;
+	s_post_playback_elapsed = 0.0;
+}
+
 /** State change callback: called when we transition between main menu, load screen, in-game */
 static void on_state_change(ds_monitor_state old_state, ds_monitor_state new_state)
 {
-	printf("\nSTATE CHANGE %d -> %d\n", static_cast<int>(old_state), static_cast<int>(new_state));
+	if (new_state == ds_monitor_state::in_game)
+	{
+		// Resolve the full set of addresses we need while in-game
+		if (!s_memmap.resolve(s_process))
+		{
+			printf("ERROR: Failed to resolve memory upon change to in-game state\n");
+			exit(2);
+		}
+		printf("In-game! Resolved full memory map.\n");
+
+		// Update our playback state based on the state we're coming from
+		if (s_program_state == _program_state::idle)
+		{
+			printf("Beginning pre-playback state...\n");
+			s_program_state = _program_state::pre_playback;
+		}
+		else if (s_program_state == _program_state::pre_playback)
+		{
+			printf("Continuing pre-playback state...\n");
+			s_has_finished_bonfire_warp = true;
+		}
+	}
+	else if (new_state == ds_monitor_state::load_screen)
+	{
+		printf("Transitioned to load screen.\n");
+	}
+	else if (new_state == ds_monitor_state::main_menu)
+	{
+		printf("Transitioned to main menu.\n");
+	}
 }
 
 /** Update callback: called once per frame while in-game, approx.every 16ms */
 static void on_update(uint32_t frame_index, double real_delta_time)
 {
-	printf(".");
+	if (s_program_state == _program_state::pre_playback)
+	{
+		// When we first enter the pre-playback state, reset the area by executing a bonfire warp after a brief delay
+		if (!s_has_executed_bonfire_warp && frame_index >= 240)
+		{
+			const uint32_t bonfire_id = 1510980;
+			printf("Warping to bonfire %u...\n", bonfire_id);
+			ds_inject::warp_to_bonfire(s_process, s_memmap, bonfire_id);
+			s_has_executed_bonfire_warp = true;
+		}
+		
+		// A little bit after our bonfire warp has finished, teleport the player character to the start position
+		if (!s_has_warped_to_start_pos)
+		{
+			if (s_has_finished_bonfire_warp && frame_index >= 240)
+			{
+				// Warp the player to the initial position for the script
+				ds_player player(s_process, s_memmap);
+				printf("Warping to start position and waiting %0.2f seconds...\n", s_script->settle_time);
+				player.set_pos(s_script->warp_pos);
+				s_has_warped_to_start_pos = true;
+			}
+		}
+		else if (!s_has_settled)
+		{
+			// After the warp, wait a moment for the player to land and settle into place
+			s_settle_time_elapsed += real_delta_time;
+			if (s_settle_time_elapsed >= s_script->settle_time)
+			{
+				s_has_settled = true;
+			}
+		}
+
+		// Once we've settled from the teleport, center the camera, wait another moment, then start playback
+		if (s_has_settled)
+		{
+			vc_state state;
+
+			// Center pitch by writing to process memory, and center yaw by pressing and releasing right stick
+			if (!s_has_centered_camera)
+			{
+				printf("Centering camera...\n");
+				s_process.poke<float>(s_memmap.camera.target_pitch, 0.0f);
+
+				state.update_button(si_control::button_rs, true);
+				s_has_centered_camera = true;
+			}
+
+			s_device.update(state);
+			s_num_frames_since_settle++;
+
+			// Once both our character and our camera are stationary, begin script playback
+			if (s_num_frames_since_settle > 120)
+			{
+				printf("Starting playback!\n");
+				reset_local_state();
+				s_program_state = _program_state::playback;
+				s_playback_start_frame_index = frame_index;
+			}
+		}
+	}
+	else if (s_program_state == _program_state::playback)
+	{
+		const uint32_t frame_number = frame_index - s_playback_start_frame_index;
+		s_playback_elapsed += real_delta_time;
+
+		if (s_playback_elapsed <= s_script->duration)
+		{
+			printf(".");
+		}
+		else
+		{
+			printf("done (%0.5f elapsed at frame %u)!\n", s_playback_elapsed, frame_number);
+			s_program_state = _program_state::post_playback;
+		}
+	}
+	else if (s_program_state == _program_state::post_playback)
+	{
+		s_post_playback_elapsed += real_delta_time;
+		if (s_post_playback_elapsed > 2.0)
+		{
+			reset_local_state();
+			s_program_state = _program_state::pre_playback;
+
+			const uint32_t bonfire_id = 1510980;
+			printf("Warping to bonfire %u...\n", bonfire_id);
+			ds_inject::warp_to_bonfire(s_process, s_memmap, bonfire_id);
+			s_has_executed_bonfire_warp = true;
+		}
+	}
 }
 
 int main(int argc, char* argv[])
