@@ -25,86 +25,69 @@
 #include "ds_player.h"
 #include "ds_inject.h"
 
-void enable_blackout(gp_process& process, const ds_memmap& memmap)
+/** Virtual controller: an emulated X360 controller using ViGEmuBus */
+static vc_device s_device;
+
+/** Scripted input: playback system for a series of predetermined input events */
+static si_list s_list;
+static const si_script* s_script = nullptr;
+static si_timeline s_timeline;
+
+/** Game process: an interface for manipulating a running instance of the game */
+static const wchar_t* DS1R_EXE_NAME = L"DarkSoulsRemastered.exe";
+static const wchar_t* DS1R_EXE_PATH = L"Q:\\SteamLibrary\\steamapps\\common\\DARK SOULS REMASTERED\\DarkSoulsRemastered.exe";
+static const wchar_t* DS1R_WINDOW_CLASS = L"DARK SOULS";
+static const uint32_t DS1R_STEAM_APP_ID = 570940;
+static gp_binary s_binary(DS1R_EXE_PATH, DS1R_WINDOW_CLASS, DS1R_STEAM_APP_ID);
+static gp_process s_process;
+static gp_window s_window;
+
+/** Dark Souls: an interface for manipulating memory in an instance of DS1R */
+static ds_memmap s_memmap;
+
+/** Init function: encapsulates all our required startup logic */
+static bool init()
 {
-	static const float RGB_BLACK[3] = { 0.0f, 0.0f, 0.0f };
-	process.write(memmap.colorgrade.override_brightness_rgb, reinterpret_cast<const uint8_t*>(RGB_BLACK), sizeof(RGB_BLACK));
-	process.poke<uint32_t>(memmap.colorgrade.override_flag, 1);
-}
-
-void disable_blackout(gp_process& process, const ds_memmap& memmap)
-{
-	static const float RGB_WHITE[3] = { 1.0f, 1.0f, 1.0f };
-	process.write(memmap.colorgrade.override_brightness_rgb, reinterpret_cast<const uint8_t*>(RGB_WHITE), sizeof(RGB_WHITE));
-	process.poke<uint32_t>(memmap.colorgrade.override_flag, 0);
-}
-
-void on_state_change(ds_monitor_state old_state, ds_monitor_state new_state)
-{
-	printf("\nSTATE CHANGE %d -> %d\n", static_cast<int>(old_state), static_cast<int>(new_state));
-}
-
-void on_update(uint32_t frame_index, double real_delta_time)
-{
-	printf(".");
-}
-
-int main(int argc, char* argv[])
-{
-	// Load up the .yml scripts that define our scripted interactions
-	si_list list;
-	if (!list.load(L"..\\data"))
-	{
-		printf("ERROR: Failed to load scripts\n");
-		return 1;
-	}
-
-	// Find the script that we parsed from our test file
-	const si_script* script = list.find("script");
-	if (!script)
-	{
-		printf("ERROR: Failed to find test script\n");
-		return 1;
-	}
-
-	// Load that script into a timeline for playback
-	si_timeline timeline;
-	timeline.load(*script);
-
 	// Connect an emulated X360 controller to the ViGEmBus driver
-	vc_device device;
-	if (!device.init())
+	if (!s_device.init())
 	{
 		printf("ERROR: Failed to initialize virtual controller device\n");
-		return 1;
+		return false;
 	}
 
-	// Establish the binary that we're trying to manipulate: DS1R in this case
-	const wchar_t* DS1R_EXE_NAME = L"DarkSoulsRemastered.exe";
-	const wchar_t* DS1R_EXE_PATH = L"Q:\\SteamLibrary\\steamapps\\common\\DARK SOULS REMASTERED\\DarkSoulsRemastered.exe";
-	const wchar_t* DS1R_WINDOW_CLASS = L"DARK SOULS";
-	const uint32_t DS1R_STEAM_APP_ID = 570940;
-	gp_binary binary(DS1R_EXE_PATH, DS1R_WINDOW_CLASS, DS1R_STEAM_APP_ID);
+	// Load up the .yml scripts that define our scripted interactions
+	if (!s_list.load(L"..\\data"))
+	{
+		printf("ERROR: Failed to load scripts\n");
+		return false;
+	}
+
+	// Find our test script and load it into the timeline
+	s_script = s_list.find("script");
+	if (!s_script)
+	{
+		printf("ERROR: Failed to find test script\n");
+		return false;
+	}
+	s_timeline.load(*s_script);
 
 	// Find a DS1R window if already running; otherwise try to launch the game
-	gp_process process;
 	bool launched_process = false;
-	if (!binary.find_process(process))
+	if (!s_binary.find_process(s_process))
 	{
-		if (!binary.launch_process(process))
+		if (!s_binary.launch_process(s_process))
 		{
 			printf("ERROR: Failed to launch %ls (no existing process found)\n", DS1R_EXE_NAME);
-			return 1;
+			return false;
 		}
 		launched_process = true;
 	}
 
 	// Get a handle to the game's main window: if we just launched the process, block for a few seconds and wait
-	gp_window window;
 	const uint32_t await_window_timeout = 1000 * (launched_process ? 10 : 0);
-	if (!window.await(process.pid, DS1R_WINDOW_CLASS, await_window_timeout))
+	if (!s_window.await(s_process.pid, DS1R_WINDOW_CLASS, await_window_timeout))
 	{
-		printf("ERROR: Failed to find window of class '%ls' associated with pid %u", DS1R_WINDOW_CLASS, process.pid);
+		printf("ERROR: Failed to find window of class '%ls' associated with pid %u", DS1R_WINDOW_CLASS, s_process.pid);
 		if (await_window_timeout > 0)
 		{
 			printf(" (waited %0.2f seconds)", static_cast<float>(await_window_timeout) / 1000.0f);
@@ -112,19 +95,48 @@ int main(int argc, char* argv[])
 		printf("\n");
 		return false;
 	}
-	window.move_to(1920, 0);
-	window.activate();
-	Sleep(1000);
 
-	// Peek memory and follow pointers to resolve addresses to relevant values
-	ds_memmap memmap;
-	if (!memmap.init(process))
+	// Move the window to a fixed screen position and give it focus
+	s_window.move_to(1920, 0);
+	s_window.activate();
+
+	// If the window has just been launched, wait another moment for process memory to be initialized
+	if (launched_process)
 	{
-		printf("ERROR: Failed to initialize memory map for running process\n");
+		Sleep(1000);
+	}
+
+	// Resolve the fixed, landmark memory locations that point us to relevant game data
+	if (!s_memmap.init(s_process))
+	{
+		printf("ERROR: Failed to initialize memory map for %s process\n", launched_process ? "newly-launched" : "already-running");
+		return false;
+	}
+
+	// Success! All our program state is valid and we can proceed
+	return true;
+}
+
+/** State change callback: called when we transition between main menu, load screen, in-game */
+static void on_state_change(ds_monitor_state old_state, ds_monitor_state new_state)
+{
+	printf("\nSTATE CHANGE %d -> %d\n", static_cast<int>(old_state), static_cast<int>(new_state));
+}
+
+/** Update callback: called once per frame while in-game, approx.every 16ms */
+static void on_update(uint32_t frame_index, double real_delta_time)
+{
+	printf(".");
+}
+
+int main(int argc, char* argv[])
+{
+	if (!init())
+	{
 		return 1;
 	}
 
-	ds_monitor monitor(process, memmap.playtime_addr, &on_state_change, &on_update);
+	ds_monitor monitor(s_process, s_memmap.playtime_addr, &on_state_change, &on_update);
 	while (true)
 	{
 		monitor.poll();
@@ -173,9 +185,9 @@ int main(int argc, char* argv[])
 
 		// Black out the screen for a second before starting
 		printf("Blacking out the screen before starting playback...\n");
-		enable_blackout(process, memmap);
+		ds_colorgrade::enable_blackout(process, memmap);
 		Sleep(2000);
-		disable_blackout(process, memmap);
+		ds_colorgrade::disable_blackout(process, memmap);
 
 		// Start playback of our events
 		clock.frame_count = 0;
@@ -256,9 +268,9 @@ int main(int argc, char* argv[])
 
 		printf("Done!\n");
 
-		enable_blackout(process, memmap);
+		ds_colorgrade::enable_blackout(process, memmap);
 		Sleep(2000);
-		disable_blackout(process, memmap);
+		ds_colorgrade::disable_blackout(process, memmap);
 
 		Sleep(10);
 	}

@@ -89,6 +89,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="../src/main.cpp" />
+    <ClCompile Include="..\src\ds_colorgrade.cpp" />
     <ClCompile Include="..\src\ds_inject.cpp" />
     <ClCompile Include="..\src\ds_memmap.cpp" />
     <ClCompile Include="..\src\ds_monitor.cpp" />
@@ -108,6 +109,7 @@
     <ClCompile Include="..\src\vc_state.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\ds_colorgrade.h" />
     <ClInclude Include="..\include\ds_inject.h" />
     <ClInclude Include="..\include\ds_memmap.h" />
     <ClInclude Include="..\include\ds_monitor.h" />
