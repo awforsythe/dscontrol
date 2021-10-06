@@ -6,37 +6,22 @@
 #include "si_script.h"
 #include "si_event.h"
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
-static uint64_t s_freq = 0;
-
-static uint64_t get_timestamp()
-{
-	LARGE_INTEGER val;
-	if (QueryPerformanceCounter(&val))
-	{
-		return val.QuadPart;
-	}
-	return 0;
-}
-
-si_evaluator::si_evaluator(const si_timeline& in_timeline)
-	: timeline(in_timeline)
+si_evaluator::si_evaluator()
+	: timeline(nullptr)
 	, playback_time(0.0)
-	, prev_timestamp(0)
 	, control_state()
 {
-	LARGE_INTEGER val;
-	if (QueryPerformanceFrequency(&val))
-	{
-		s_freq = val.QuadPart;
-	}
-	assert(s_freq != 0);
+	memset(&track_states, 0, sizeof(track_states));
+}
+
+void si_evaluator::reset(const si_timeline& in_timeline)
+{
+	timeline = &in_timeline;
+	playback_time = 0.0;
 
 	for (uint8_t track_index = 0; track_index < si_control_count; track_index++)
 	{
-		const si_track& track = timeline.tracks[track_index];
+		const si_track& track = timeline->tracks[track_index];
 		si_track_state& track_state = track_states[track_index];
 
 		track_state.current_event_index = -1;
@@ -56,26 +41,13 @@ si_evaluator::si_evaluator(const si_timeline& in_timeline)
 	}
 }
 
-void si_evaluator::start()
+bool si_evaluator::tick(double elapsed)
 {
-	prev_timestamp = get_timestamp();
-}
-
-bool si_evaluator::tick()
-{
-	assert(prev_timestamp != 0);
-	assert(s_freq != 0);
-
-	const uint64_t timestamp = get_timestamp();
-	const uint64_t timestamp_delta = timestamp - prev_timestamp;
-	prev_timestamp = timestamp;
-
-	const double elapsed = static_cast<double>(timestamp_delta) / s_freq;
 	playback_time += elapsed;
 
 	for (size_t track_index = 0; track_index < si_control_count; track_index++)
 	{
-		const si_track& track = timeline.tracks[track_index];
+		const si_track& track = timeline->tracks[track_index];
 		si_track_state& track_state = track_states[track_index];
 
 		if (track_state.current_event_index >= 0)
@@ -148,5 +120,5 @@ bool si_evaluator::tick()
 		}
 	}
 
-	return playback_time >= timeline.script->duration;
+	return playback_time >= timeline->script->duration;
 }

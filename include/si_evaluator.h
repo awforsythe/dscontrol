@@ -35,15 +35,13 @@ struct si_track_state
 
 struct si_evaluator
 {
-	const si_timeline& timeline;
+	const si_timeline* timeline;
 
 	double playback_time;
-	uint64_t prev_timestamp;
-	
 	si_track_state track_states[si_control_count];
 	vc_state control_state;
 
-	si_evaluator(const si_timeline& in_timeline);
-	void start();
-	bool tick();
+	si_evaluator();
+	void reset(const si_timeline& in_timeline);
+	bool tick(double elapsed);
 };

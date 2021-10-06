@@ -33,6 +33,7 @@ static vc_device s_device;
 static si_list s_list;
 static const si_script* s_script = nullptr;
 static si_timeline s_timeline;
+static si_evaluator s_evaluator;
 
 /** Game process: an interface for manipulating a running instance of the game */
 static const wchar_t* DS1R_EXE_NAME = L"DarkSoulsRemastered.exe";
@@ -267,6 +268,9 @@ static void on_update(uint32_t frame_index, double real_delta_time)
 					ds_colorgrade::disable_blackout(s_process, s_memmap);
 
 					printf("Starting playback!\n");
+
+					s_evaluator.reset(s_timeline);
+
 					reset_local_state();
 					s_program_state = _program_state::playback;
 					s_playback_start_frame_index = frame_index;
@@ -287,6 +291,9 @@ static void on_update(uint32_t frame_index, double real_delta_time)
 
 		if (s_playback_elapsed <= s_script->duration)
 		{
+			s_evaluator.tick(real_delta_time);
+			s_device.update(s_evaluator.control_state);
+
 			const ds_player player(s_process, s_memmap);
 			const ds_pos pos = player.get_pos();
 
@@ -304,6 +311,8 @@ static void on_update(uint32_t frame_index, double real_delta_time)
 		}
 		else
 		{
+			s_device.update(vc_state());
+
 			printf("\nDone (%0.5f elapsed at frame %u)!\n", s_playback_elapsed, frame_number);
 			s_program_state = _program_state::post_playback;
 
