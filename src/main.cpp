@@ -24,6 +24,7 @@
 #include "ds_monitor.h"
 #include "ds_player.h"
 #include "ds_inject.h"
+#include "ds_colorgrade.h"
 
 /** Virtual controller: an emulated X360 controller using ViGEmuBus */
 static vc_device s_device;
@@ -134,6 +135,8 @@ static double s_settle_time_elapsed = 0.0;
 static bool s_has_settled = false;
 static uint32_t s_num_frames_since_settle = 0;
 static bool s_has_centered_camera = false;
+static bool s_has_enabled_blackout = false;
+static uint32_t s_num_frames_blacked_out = 0;
 
 static uint32_t s_playback_start_frame_index = 0;
 static double s_playback_elapsed = 0.0;
@@ -148,6 +151,8 @@ static void reset_local_state()
 	s_has_settled = false;
 	s_num_frames_since_settle = 0;
 	s_has_centered_camera = false;
+	s_has_enabled_blackout = false;
+	s_num_frames_blacked_out = 0;
 
 	s_playback_start_frame_index = 0;
 	s_playback_elapsed = 0.0;
@@ -243,13 +248,35 @@ static void on_update(uint32_t frame_index, double real_delta_time)
 			s_device.update(state);
 			s_num_frames_since_settle++;
 
-			// Once both our character and our camera are stationary, begin script playback
-			if (s_num_frames_since_settle > 120)
+			// Once both our character and our camera are stationary, black out the screen for a moment
+			if (!s_has_enabled_blackout && s_num_frames_since_settle > 60)
 			{
-				printf("Starting playback!\n");
-				reset_local_state();
-				s_program_state = _program_state::playback;
-				s_playback_start_frame_index = frame_index;
+				printf("Blacking out screen for 60 frames (head)...\n");
+				ds_colorgrade::enable_blackout(s_process, s_memmap);
+				s_has_enabled_blackout = true;
+				s_num_frames_blacked_out = 0;
+			}
+
+			// Once the screen has been black for 60 frames, begin script playback
+			if (s_has_enabled_blackout)
+			{
+				s_num_frames_blacked_out++;
+
+				if (s_num_frames_blacked_out >= 60)
+				{
+					ds_colorgrade::disable_blackout(s_process, s_memmap);
+
+					printf("Starting playback!\n");
+					reset_local_state();
+					s_program_state = _program_state::playback;
+					s_playback_start_frame_index = frame_index;
+
+					SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
+					for (int32_t i = 0; i < 32; i++)
+					{
+						printf("                                                                \n");
+					}
+				}
 			}
 		}
 	}
@@ -260,26 +287,49 @@ static void on_update(uint32_t frame_index, double real_delta_time)
 
 		if (s_playback_elapsed <= s_script->duration)
 		{
-			printf(".");
+			const ds_player player(s_process, s_memmap);
+			const ds_pos pos = player.get_pos();
+
+			SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
+			printf("FRAME: %u        \n", frame_number);
+			printf(" TIME: %7.3f s   \n", s_playback_elapsed);
+			printf("   dt: %7.3f ms  \n", real_delta_time * 1000.0);
+			printf("POS X: %7.3f     \n", pos.x);
+			printf("POS Y: %7.3f     \n", pos.y);
+			printf("POS Z: %7.3f     \n", pos.z);
+			printf("ANGLE: %7.3f     \n", pos.angle);
+			printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
+			printf("pitch: %7.3f     \n", s_process.peek<float>(s_memmap.camera.target_pitch));
+			printf("\n");
 		}
 		else
 		{
-			printf("done (%0.5f elapsed at frame %u)!\n", s_playback_elapsed, frame_number);
+			printf("\nDone (%0.5f elapsed at frame %u)!\n", s_playback_elapsed, frame_number);
 			s_program_state = _program_state::post_playback;
+
+			printf("Blacking out screen for 60 frames (tail)...\n");
+			ds_colorgrade::enable_blackout(s_process, s_memmap);
+			s_has_enabled_blackout = true;
+			s_num_frames_blacked_out = 0;
 		}
 	}
 	else if (s_program_state == _program_state::post_playback)
 	{
-		s_post_playback_elapsed += real_delta_time;
-		if (s_post_playback_elapsed > 2.0)
+		// Once we have another 60 black frames as a tail, restart the sequence
+		if (s_has_enabled_blackout)
 		{
-			reset_local_state();
-			s_program_state = _program_state::pre_playback;
+			s_num_frames_blacked_out++;
 
-			const uint32_t bonfire_id = 1510980;
-			printf("Warping to bonfire %u...\n", bonfire_id);
-			ds_inject::warp_to_bonfire(s_process, s_memmap, bonfire_id);
-			s_has_executed_bonfire_warp = true;
+			if (s_num_frames_blacked_out >= 60)
+			{
+				reset_local_state();
+				s_program_state = _program_state::pre_playback;
+
+				const uint32_t bonfire_id = 1510980;
+				printf("Warping to bonfire %u...\n", bonfire_id);
+				ds_inject::warp_to_bonfire(s_process, s_memmap, bonfire_id);
+				s_has_executed_bonfire_warp = true;
+			}
 		}
 	}
 }
@@ -296,138 +346,4 @@ int main(int argc, char* argv[])
 	{
 		monitor.poll();
 	}
-
-#if 0
-	// Once we have a player character loaded, we need to resolve the full set of
-	// addresses required to control the game
-	if (!memmap.resolve(process))
-	{
-		printf("ERROR: Failed to resolve memory upon initial load\n");
-		return false;
-	}
-
-	while (true)
-	{
-		// Warp to the desired bonfire to reset and reload the area
-		const uint32_t bonfire_id = 1510980;
-		printf("Warping to bonfire %u...\n", bonfire_id);
-		ds_inject::warp_to_bonfire(process, memmap, bonfire_id);
-		Sleep(5000);
-
-		// Memory will have changed; re-resolve the required addresses
-		if (!memmap.resolve(process))
-		{
-			printf("ERROR: Failed to re-resolve memory map after warp\n");
-			return 1;
-		}
-
-		// Warp the player to the initial position for the script, then wait
-		ds_player player(process, memmap);
-		printf("Warping to start position and waiting %0.2f seconds...\n", script->settle_time);
-		player.set_pos(script->warp_pos);
-		Sleep(static_cast<DWORD>(1000.0f * script->settle_time));
-
-		// Center the camera, then wait another brief moment
-		printf("Centering camera...\n");
-		vc_state state;
-		process.poke<float>(memmap.camera.target_pitch, 0.0f);
-		state.update_button(si_control::button_rs, true);
-		device.update(state);
-		Sleep(20);
-		state.update_button(si_control::button_rs, false);
-		device.update(state);
-		Sleep(1000);
-
-		// Black out the screen for a second before starting
-		printf("Blacking out the screen before starting playback...\n");
-		ds_colorgrade::enable_blackout(process, memmap);
-		Sleep(2000);
-		ds_colorgrade::disable_blackout(process, memmap);
-
-		// Start playback of our events
-		clock.frame_count = 0;
-		si_evaluator evaluator(timeline);
-		evaluator.start();
-
-		system("cls");
-
-		std::set<ds_pos> pos_values_seen_this_frame;
-		
-		static const size_t MAX_POS_COUNT = 8;
-		int32_t pos_value_counts[MAX_POS_COUNT];
-		memset(pos_value_counts, 0, sizeof(pos_value_counts));
-
-		bool finished = false;
-		while (!finished)
-		{
-			const uint32_t delta = clock.read();
-			if (delta > 0)
-			{
-				const size_t num_pos_values_last_frame = pos_values_seen_this_frame.size();
-				if (num_pos_values_last_frame > 0)
-				{
-					pos_value_counts[min(num_pos_values_last_frame, MAX_POS_COUNT - 1)]++;
-				}
-				pos_values_seen_this_frame.clear();
-
-				finished = evaluator.tick();
-				device.update(evaluator.control_state);
-
-				const ds_pos pos = player.get_pos();
-				pos_values_seen_this_frame.insert(pos);
-
-				SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
-				printf("FRAME: %u        \n", clock.frame_count);
-				printf("   dt: %7.3f ms  \n", clock.real_frame_time * 1000.0);
-				printf("POS X: %7.3f     \n", pos.x);
-				printf("POS Y: %7.3f     \n", pos.y);
-				printf("POS Z: %7.3f     \n", pos.z);
-				printf("ANGLE: %7.3f     \n", pos.angle);
-				printf("(deg): %7.3f     \n", pos.angle * 57.2957795f);
-				printf("pitch: %7.3f     \n", process.peek<float>(memmap.camera.target_pitch));
-				printf("\n");
-
-				printf("DISCRETE POSITION VALUES COUNTED PER FRAME:\n");
-				for (size_t pos_count = 1; pos_count < MAX_POS_COUNT; pos_count++)
-				{
-					const char* suffix = pos_count == MAX_POS_COUNT - 1 ? "+" : " ";
-					printf(" %zu%s: %d\n", pos_count, suffix, pos_value_counts[pos_count]);
-				}
-				printf("\n");
-
-				printf("T+%5.2f     \n", evaluator.playback_time);
-
-				const int32_t num_events = static_cast<int32_t>(script->events.size());
-				int32_t completed_event_index = -1;
-				for (int32_t i = 0; i < num_events; i++)
-				{
-					if (evaluator.playback_time > script->events[i].time)
-					{
-						completed_event_index = i;
-					}
-					else
-					{
-						break;
-					}
-				}
-			}
-			else
-			{
-				const ds_pos pos = player.get_pos();
-				pos_values_seen_this_frame.insert(pos);
-			}
-		}
-
-		state.reset();
-		device.update(state);
-
-		printf("Done!\n");
-
-		ds_colorgrade::enable_blackout(process, memmap);
-		Sleep(2000);
-		ds_colorgrade::disable_blackout(process, memmap);
-
-		Sleep(10);
-	}
-#endif
 }
