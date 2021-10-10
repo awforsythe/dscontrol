@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cinttypes>
 #include <cassert>
-#include <set>
+#include <vector>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -21,6 +21,7 @@
 
 #include "ds_memmap.h"
 #include "ds_pos.h"
+#include "ds_frame.h"
 #include "ds_monitor.h"
 #include "ds_player.h"
 #include "ds_inject.h"
@@ -143,6 +144,9 @@ static uint32_t s_playback_start_frame_index = 0;
 static double s_playback_elapsed = 0.0;
 static double s_post_playback_elapsed = 0.0;
 
+static std::vector<ds_frame> s_frames;
+static bool s_has_written_frames_to_csv = false;
+
 static void reset_local_state()
 {
 	s_has_executed_bonfire_warp = false;
@@ -229,6 +233,11 @@ static void on_update(uint32_t frame_index, double real_delta_time)
 			{
 				s_has_settled = true;
 			}
+
+			// Allocate enough space to fit all the frames we'll be recording
+			const size_t max_frames = static_cast<size_t>(s_script->duration * 60.0) + 60;
+			s_frames.clear();
+			s_frames.reserve(max_frames);
 		}
 
 		// Once we've settled from the teleport, center the camera, wait another moment, then start playback
@@ -269,6 +278,7 @@ static void on_update(uint32_t frame_index, double real_delta_time)
 
 					printf("Starting playback!\n");
 
+					s_frames.clear();
 					s_evaluator.reset(s_timeline);
 
 					reset_local_state();
@@ -296,6 +306,8 @@ static void on_update(uint32_t frame_index, double real_delta_time)
 
 			const ds_player player(s_process, s_memmap);
 			const ds_pos pos = player.get_pos();
+
+			s_frames.emplace_back(frame_number, s_playback_elapsed, pos);
 
 			SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{ 0, 0 });
 			printf("FRAME: %u        \n", frame_number);
@@ -339,6 +351,20 @@ static void on_update(uint32_t frame_index, double real_delta_time)
 				ds_inject::warp_to_bonfire(s_process, s_memmap, bonfire_id);
 				s_has_executed_bonfire_warp = true;
 			}
+		}
+
+		// Dump recorded data to CSV (only do this once per run)
+		if (!s_has_written_frames_to_csv)
+		{
+			FILE* fp = fopen("..\\script.csv", "w");
+			fprintf(fp, "num,time,x,y,z,angle\n");
+			for (size_t index = 0; index < s_frames.size(); index++)
+			{
+				const ds_frame& frame = s_frames[index];
+				fprintf(fp, "%u,%f,%f,%f,%f,%f\n", frame.frame_number, frame.real_time, frame.pos.x, frame.pos.y, frame.pos.z, frame.pos.angle);
+			}
+			fclose(fp);
+			s_has_written_frames_to_csv = true;
 		}
 	}
 }

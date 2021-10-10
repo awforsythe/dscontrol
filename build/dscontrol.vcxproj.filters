@@ -131,5 +131,8 @@
     <ClInclude Include="..\include\ds_colorgrade.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\ds_frame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -113,6 +113,7 @@
     <ClInclude Include="..\include\ds_inject.h" />
     <ClInclude Include="..\include\ds_memmap.h" />
     <ClInclude Include="..\include\ds_monitor.h" />
+    <ClInclude Include="..\include\ds_frame.h" />
     <ClInclude Include="..\include\gp_bytepattern.h" />
     <ClInclude Include="..\include\ds_player.h" />
     <ClInclude Include="..\include\ds_pos.h" />
