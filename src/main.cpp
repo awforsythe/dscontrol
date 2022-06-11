@@ -38,7 +38,7 @@ static si_evaluator s_evaluator;
 
 /** Game process: an interface for manipulating a running instance of the game */
 static const wchar_t* DS1R_EXE_NAME = L"DarkSoulsRemastered.exe";
-static const wchar_t* DS1R_EXE_PATH = L"Q:\\SteamLibrary\\steamapps\\common\\DARK SOULS REMASTERED\\DarkSoulsRemastered.exe";
+static const wchar_t* DS1R_EXE_PATH = L"E:\\SteamLibrary\\steamapps\\common\\DARK SOULS REMASTERED\\DarkSoulsRemastered.exe";
 static const wchar_t* DS1R_WINDOW_CLASS = L"DARK SOULS";
 static const uint32_t DS1R_STEAM_APP_ID = 570940;
 static gp_binary s_binary(DS1R_EXE_PATH, DS1R_WINDOW_CLASS, DS1R_STEAM_APP_ID);
