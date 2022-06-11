@@ -4,6 +4,9 @@
 #include <vector>
 #include <string>
 
+/** Represents a known sequence of bytes, optionally containing wildcards which may
+	match any byte, parsed from a string; e.g. '41 0C FF xx xx xx xx EF EF'.
+*/
 struct gp_bytepattern
 {
 	static const uint8_t FLAGS_NONE = 0;

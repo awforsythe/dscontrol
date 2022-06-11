@@ -2,6 +2,9 @@
 
 #include <cinttypes>
 
+/** Represents a player character transform in DS1R, as a global 3D translation
+	and a yaw angle in degrees.
+*/
 struct ds_pos
 {
 	float x;

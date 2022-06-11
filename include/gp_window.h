@@ -2,6 +2,7 @@
 
 #include <cinttypes>
 
+/** Interface to the main window belonging to a running game process. */
 struct gp_window
 {
 	void* handle;

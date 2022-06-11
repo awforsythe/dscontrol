@@ -5,6 +5,7 @@
 
 #include "ds_pos.h"
 
+/** Represents a frame of telemetry data recorded from a DS1R process. */
 struct ds_frame
 {
 	uint32_t frame_number;

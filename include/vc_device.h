@@ -5,6 +5,7 @@
 
 #include "ViGEm/Client.h"
 
+/** Virtual controller: emulated USB gamepad used to send input to the game. */
 struct vc_device
 {
 	PVIGEM_CLIENT client;

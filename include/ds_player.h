@@ -7,6 +7,7 @@
 struct gp_process;
 struct ds_memmap;
 
+/** Interface for reading and controlling player character data in DS1R. */
 struct ds_player
 {
 	gp_process& process;

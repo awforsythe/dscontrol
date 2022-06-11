@@ -2,6 +2,9 @@
 
 #include <cinttypes>
 
+/** Game process: interface to an active Window process, allowing us to read and
+	manipulate memory while a game is running.
+*/
 struct gp_process
 {
 	uint32_t pid;

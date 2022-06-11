@@ -2,6 +2,8 @@
 
 #include <cinttypes>
 
+/** Scripted input control: identifies a single button or analog stick on the gamepad.
+*/
 enum class si_control : uint8_t
 {
 	left_stick,

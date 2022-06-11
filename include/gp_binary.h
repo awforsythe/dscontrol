@@ -6,6 +6,9 @@
 #include "gp_window.h"
 #include "gp_process.h"
 
+/** Known details about an installed game executable, used to locate (or spawn) the
+	corresponding process and window at runtime.
+*/
 struct gp_binary
 {
 	std::wstring exe_path;

@@ -5,6 +5,7 @@
 
 #include "si_script.h"
 
+/** A list of script files loaded from disk. */
 struct si_list
 {
 	std::map<std::string, si_script> scripts;

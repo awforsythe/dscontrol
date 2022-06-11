@@ -5,8 +5,23 @@
 #include "gp_process.h"
 #include "gp_landmark.h"
 
+// These values are typically found by poking around in memory with a tool like Cheat
+// Engine while the game is running. We start by finding a "landmark" address - these
+// are unique byte patterns at a known offset into the address space of the executable.
+// In a 'relative' landmark, there's a 4-byte offset located 3 bytes into the landmark:
+// by jumping forward by that offset (plus 7 bytes), we arrive at a pointer that holds
+// the address of a particular struct. The pointer itself (i.e. the address we've
+// arrived at) remains fixed at that location for the duration of the process, but the
+// struct it points to is reallocated on map load and can move around.
 static const gp_landmark s_stats(0x728E50, gp_landmark_type::relative, "48 8B 05 xx xx xx xx 45 33 ED 48 8B F1 48 85 C0");
 
+// Once we've found the pointer to a base struct, we can dereference that pointer
+// (after each map load) to get to the struct we're interested in. From there, we can
+// follow a "jump list" - a series of offsets describing a chain of pointers that lead
+// us from the base struct to some other struct. For each offset in the jump list: we
+// move forward by that offset to find a pointer, then we dereference that value to get
+// to the next struct. We continue following those offsets until we arrive at a struct
+// whose member values control actual game data that we want to view or manipulate.
 static const gp_landmark s_postprocess(0x15CE80, gp_landmark_type::relative, "48 8B 05 xx xx xx xx 48 8B 48 08 48 8B 01 48 8B 40 58");
 static const int32_t s_postprocess_to_colorgrade[] = { 0x738 };
 
@@ -19,15 +34,25 @@ static const int32_t s_world_chr_to_chr_pos_data[] = { 0x68, 0x68, 0x28 };
 
 static const gp_landmark s_chr_class(0x755DB0, gp_landmark_type::relative, "48 8B 05 xx xx xx xx 48 85 C0 xx xx F3 0F 58 80 AC 00 00 00");
 static const gp_landmark s_chr_class_warp(0x2C89B3, gp_landmark_type::relative, "48 8B 05 xx xx xx xx 66 0F 7F 80 xx xx xx xx 0F 28 02 66 0F 7F 80 xx xx xx xx C6 80");
+
+// Some landmarks are 'absolute', i.e. we just check the known offset to verify that
+// the known byte pattern is there as expected, and then we take that address as the
+// base address we're looking for.
 static const gp_landmark s_bonfire_warp(0x485CE0, gp_landmark_type::absolute, "48 89 5C 24 08 57 48 83 EC 20 48 8B D9 8B FA 48 8B 49 08 48 85 C9 0F 84 xx xx xx xx E8 xx xx xx xx 48 8B 4B 08");
 
+// Syntactic sugar for passing an int32_t array to jump().
 #define ds_jumplist(_arr) _arr, sizeof(_arr) / sizeof(_arr[0])
 
+// Executes a series of jumps to follow a chain of pointers from the base address to a
+// destination struct
 static uint8_t* jump(const gp_process& process, uint8_t* base, const int32_t* offsets, size_t num_offsets)
 {
+	// Start from the dereferenced base pointer, i.e. the address of our base struct
 	uint8_t* addr = base;
 	for (size_t offset_index = 0; offset_index < num_offsets; offset_index++)
 	{
+		// From our current address, move forward by a predefined offset to get to a
+		// pointer, then dereference that pointer to update our address
 		const int32_t offset = offsets[offset_index];
 		addr = process.peek<uint8_t*>(addr + offset);
 	}

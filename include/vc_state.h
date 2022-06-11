@@ -9,6 +9,9 @@
 
 #include "ViGEm/Common.h"
 
+/** Virtual controller state: records button states, analog stick positions, etc. for
+	an input device.
+*/
 struct vc_state
 {
 	XUSB_REPORT report;

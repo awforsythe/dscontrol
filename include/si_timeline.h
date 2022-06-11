@@ -9,6 +9,9 @@ struct si_event;
 
 typedef std::vector<const si_event*> si_track;
 
+/** Scripted input timeline: loads the contents of a single script for playback, with
+	events collated into an individual track for each control.
+*/
 struct si_timeline
 {
 	const si_script* script;

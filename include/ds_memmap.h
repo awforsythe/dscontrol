@@ -4,12 +4,18 @@
 
 struct gp_process;
 
+/** Base address resolving the location of a known data structure in memory. */
 struct ds_base
 {
 	uint8_t* ptr;
 	uint8_t* dereferenced;
 };
 
+/** Memory map from DS1R, containing key addresses used to manipulate game state.
+	Offsets are not fixed- memory is reallocated on map transitions, so the memory map
+	must be resolved on each load by finding landmark memory locations and following
+	known chains of pointers.
+*/
 struct ds_memmap
 {
 	uint8_t* playtime_addr;

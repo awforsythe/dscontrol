@@ -6,6 +6,7 @@
 
 namespace c4 { namespace yml { class NodeRef; } }
 
+/** Target position for an analog stick, in polar coordinates. */
 struct si_stick_target
 {
 	float angle;
@@ -14,6 +15,11 @@ struct si_stick_target
 	si_stick_target();
 };
 
+/** Scripted input event: describes either a desired button state or a target analog
+	stick position at a discrete point in time. Duration indicates how long the button
+	is to be held or how long it should take the stick to move from its current
+	position to the target.
+*/
 struct si_event
 {
 	static const float SINGLE_FRAME_DURATION;
