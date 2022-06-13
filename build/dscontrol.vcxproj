@@ -105,6 +105,7 @@
     <ClCompile Include="..\src\si_evaluator.cpp" />
     <ClCompile Include="..\src\si_script.cpp" />
     <ClCompile Include="..\src\si_timeline.cpp" />
+    <ClCompile Include="..\src\sl_library.cpp" />
     <ClCompile Include="..\src\vc_device.cpp" />
     <ClCompile Include="..\src\vc_state.cpp" />
   </ItemGroup>
@@ -127,6 +128,8 @@
     <ClInclude Include="..\include\si_evaluator.h" />
     <ClInclude Include="..\include\si_script.h" />
     <ClInclude Include="..\include\si_timeline.h" />
+    <ClInclude Include="..\include\sl_library.h" />
+    <ClInclude Include="..\include\sl_title.h" />
     <ClInclude Include="..\include\vc_device.h" />
     <ClInclude Include="..\include\vc_state.h" />
   </ItemGroup>

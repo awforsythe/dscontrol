@@ -7,6 +7,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include "sl_title.h"
+#include "sl_library.h"
+
 #include "vc_state.h"
 #include "vc_device.h"
 
@@ -26,6 +29,9 @@
 #include "ds_player.h"
 #include "ds_inject.h"
 #include "ds_colorgrade.h"
+
+/** Steam library: allows us to resolve paths to installed game binaries. */
+static sl_library s_library;
 
 /** Virtual controller: an emulated X360 controller using ViGEmuBus */
 static vc_device s_device;
@@ -51,6 +57,18 @@ static ds_memmap s_memmap;
 /** Init function: encapsulates all our required startup logic */
 static bool init()
 {
+	// Parse our Steam library dirs and find the path to DarkSoulsRemastered.exe
+	s_library.init();
+	const std::wstring ds1r_exe_path = s_library.get_installed_exe_path(SL_TITLE_DS1R);
+	if (ds1r_exe_path.empty())
+	{
+		printf("ERROR: DS1R is not installed via Steam\n");
+		return false;
+	}
+
+	// TEMP: Use our EXE path resolved from Steam in place of the hardcoded path defined above
+	s_binary.exe_path = ds1r_exe_path;
+
 	// Connect an emulated X360 controller to the ViGEmBus driver
 	if (!s_device.init())
 	{
