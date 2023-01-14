@@ -91,6 +91,7 @@
     <ClCompile Include="../src/main.cpp" />
     <ClCompile Include="..\src\ds_colorgrade.cpp" />
     <ClCompile Include="..\src\ds_inject.cpp" />
+    <ClCompile Include="..\src\ds_launcher.cpp" />
     <ClCompile Include="..\src\ds_memmap.cpp" />
     <ClCompile Include="..\src\ds_monitor.cpp" />
     <ClCompile Include="..\src\gp_bytepattern.cpp" />
@@ -111,7 +112,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\ds_colorgrade.h" />
+    <ClInclude Include="..\include\ds_game.h" />
     <ClInclude Include="..\include\ds_inject.h" />
+    <ClInclude Include="..\include\ds_launcher.h" />
     <ClInclude Include="..\include\ds_memmap.h" />
     <ClInclude Include="..\include\ds_monitor.h" />
     <ClInclude Include="..\include\ds_frame.h" />
@@ -122,6 +125,7 @@
     <ClInclude Include="..\include\gp_binary.h" />
     <ClInclude Include="..\include\gp_process.h" />
     <ClInclude Include="..\include\gp_window.h" />
+    <ClInclude Include="..\include\rc_message.h" />
     <ClInclude Include="..\include\si_control.h" />
     <ClInclude Include="..\include\si_event.h" />
     <ClInclude Include="..\include\si_list.h" />
